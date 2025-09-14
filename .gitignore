@@ -1,0 +1,10 @@
+/.vs
+CMakeSettings.json
+*.ilk
+*.dll
+*.pdb
+*.exe
+*.log
+*.ucl
+*.ucl
+System/User.ini
