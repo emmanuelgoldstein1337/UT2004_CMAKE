@@ -5,7 +5,12 @@ project(UT2004 VERSION 3369.0 DESCRIPTION "Unreal Tournament 2004" LANGUAGES CXX
 #SET(LIBZ_LIB optimized ${PROJECT_SOURCE_DIR}/zlib.lib debug ${PROJECT_SOURCE_DIR}/zlib.lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/System_Archive)#Move it to another location
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/System_Archive)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/System)
+option(BIN_IN_SYSTEM "Place binaries in System folder" ON)
+if (BIN_IN_SYSTEM)	
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/System)
+else()
+   	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/System)
+endif()
 
 option(BUILD_CORE "Enable building Core" ON)
 option(BUILD_CORE "Enable building Engine" ON)
