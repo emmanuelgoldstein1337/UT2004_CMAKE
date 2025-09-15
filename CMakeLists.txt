@@ -60,6 +60,7 @@ set(OGG_INCLUDE_DIR Ogg::ogg)
 add_subdirectory(Vorbis/vorbis)
 add_subdirectory(Vorbis/speex)
 add_subdirectory(zlib)
+add_subdirectory(SDL)
 
 file(GLOB_RECURSE CORE_SRC ${PROJECT_SOURCE_DIR}/Core/Src/*.cpp ${PROJECT_SOURCE_DIR}/Core/Inc/*.h)
 add_library(Core SHARED ${CORE_SRC})
@@ -145,6 +146,12 @@ target_link_libraries(WinDrv PUBLIC System_Archive/Core System_Archive/Engine Sy
 target_include_directories(WinDrv PUBLIC Engine/Inc Core/Inc Window/Inc WinDrv/Inc
     ALegacy/DirectX8/Inc Metoolkit/include)
 
+file(GLOB_RECURSE SDLDRV_SRC ${PROJECT_SOURCE_DIR}/SDLDrv/Src/*.cpp ${PROJECT_SOURCE_DIR}/SDLDrv/Inc/*.h)
+add_library(SDLDrv SHARED ${SDLDRV_SRC})
+add_dependencies(SDLDrv Window Engine Core)
+target_compile_definitions(SDLDrv PRIVATE SDLDRV_API=DLL_EXPORT)
+target_link_libraries(SDLDrv PUBLIC System_Archive/Core System_Archive/Engine System_Archive/Window PRIVATE SDL3::SDL3)#dxerr8
+target_include_directories(SDLDrv PUBLIC Engine/Inc Core/Inc Window/Inc SDLDrv/Inc PRIVATE ${SDL_INCLUDES})
 
 file(GLOB_RECURSE UTV2004_SRC ${PROJECT_SOURCE_DIR}/UTV2004/Src/*.cpp ${PROJECT_SOURCE_DIR}/UTV2004/Inc/*.h)
 add_library(UTV2004 SHARED ${UTV2004_SRC})
