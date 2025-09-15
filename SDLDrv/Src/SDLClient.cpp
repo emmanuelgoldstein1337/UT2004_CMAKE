@@ -54,10 +54,10 @@ void USDLClient::StaticConstructor()
 	new(GetClass(),TEXT("IgnoreUngrabbedMouse"), RF_Public)UBoolProperty(CPP_PROPERTY(IgnoreUngrabbedMouse), TEXT("Display"),  CPF_Config );
 	new(GetClass(),TEXT("AllowUnicodeKeys"),     RF_Public)UBoolProperty(CPP_PROPERTY(AllowUnicodeKeys),     TEXT("Display"),  CPF_Config );
 	new(GetClass(),TEXT("AllowCommandQKeys"),    RF_Public)UBoolProperty(CPP_PROPERTY(AllowCommandQKeys),    TEXT("Display"),  CPF_Config );
-	new(GetClass(),TEXT("MacFakeMouseButtons"),  RF_Public)UBoolProperty(CPP_PROPERTY(MacFakeMouseButtons),  TEXT("Display"),  CPF_Config );
-	new(GetClass(),TEXT("MacKeepAllScreensOn"),  RF_Public)UBoolProperty(CPP_PROPERTY(MacKeepAllScreensOn),  TEXT("Display"),  CPF_Config );
+	//new(GetClass(),TEXT("MacFakeMouseButtons"),  RF_Public)UBoolProperty(CPP_PROPERTY(MacFakeMouseButtons),  TEXT("Display"),  CPF_Config );
+	//new(GetClass(),TEXT("MacKeepAllScreensOn"),  RF_Public)UBoolProperty(CPP_PROPERTY(MacKeepAllScreensOn),  TEXT("Display"),  CPF_Config );
 	new(GetClass(),TEXT("TextToSpeechFile"),     RF_Public)UStrProperty(CPP_PROPERTY(TextToSpeechFile),      TEXT("Display"),  CPF_Config );
-	new(GetClass(),TEXT("MacNativeTextToSpeech"),RF_Public)UBoolProperty(CPP_PROPERTY(MacNativeTextToSpeech),TEXT("Display"),  CPF_Config );
+	//new(GetClass(),TEXT("MacNativeTextToSpeech"),RF_Public)UBoolProperty(CPP_PROPERTY(MacNativeTextToSpeech),TEXT("Display"),  CPF_Config );
 
 	unguard;
 }
@@ -88,18 +88,6 @@ void USDLClient::Init( UEngine* InEngine )
 
 	// Init base.
 	UClient::Init( InEngine );
-
-	// Fix up the environment variables for 3dfx.
-	putenv("MESA_GLX_FX=f");
-	putenv("FX_GLIDE_NO_SPLASH=1");
-	// Force MESA to not initialize an atexit handler.
-	putenv("MESA_FX_NO_SIGNALS=1");
-
-    if (!MacFakeMouseButtons)
-        putenv("SDL_HAS3BUTTONMOUSE=1");
-
-    if (MacKeepAllScreensOn)
-        putenv("SDL_SINGLEDISPLAY=1");
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) == -1)
     {

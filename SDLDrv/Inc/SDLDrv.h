@@ -140,14 +140,11 @@ class USDLViewport : public UViewport
     SDL_Surface *		ScreenSurface;
 	DWORD				BlitFlags;
 
-    UBOOL				LostGrab;
-    UBOOL				LostFullscreen;
-
     INT					SavedCursorX;
     INT					SavedCursorY;
 
 	// SDL Keysym to EInputKey map.
-	BYTE				KeysymMap[512];
+	//BYTE				KeysymMap[512];
 
 	// KeyRepeatKey.
     INT					KeyRepeatKey;
@@ -190,7 +187,7 @@ class USDLViewport : public UViewport
 	void SetMouseCapture( UBOOL Capture, UBOOL Clip, UBOOL FocusOnly );
 
 	// USDLViewport interface.
-	void UpdateMouseGrabState();
+	//void UpdateMouseGrabState();
 	void ToggleFullscreen();
 	void EndFullscreen();
 	void SetTopness();

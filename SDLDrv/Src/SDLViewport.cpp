@@ -70,20 +70,16 @@ USDLViewport::USDLViewport()
 {
 	guard(USDLViewport::USDLViewport);
 
-	SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_JOYSTICK);
 	Window = SDL_CreateWindow("NULL", 640, 480, SDL_WINDOW_OPENGL);
-	Context = SDL_GL_CreateContext(Window);
-	ScreenSurface = SDL_GetWindowSurface(Window);
+	Context = SDL_GL_CreateContext( Window );
+	ScreenSurface = SDL_GetWindowSurface( Window );
 	SDL_GL_MakeCurrent(Window, Context);
+	//SDL_WarpMouseInWindow(0, 640, 480);
+	//SDL_CaptureMouse(true);
+	SDL_SetWindowRelativeMouseMode( Window, true );
     FullscreenOnly = 0;
 
-    LostFullscreen = LostGrab = 0;
-
     TextToSpeechObject = -1;
-
-    #if MACOSX
-    MacTextToSpeechEnabled = 0;
-    #endif
 
 	// Query current bit depth.
 	int depth = 32; //DIXME //SDL_BITSPERPIXEL(SDL_GetCurrentDisplayMode(0)->format); //SDL_GetVideoInfo()->vfmt->BitsPerPixel;
@@ -115,6 +111,9 @@ USDLViewport::USDLViewport()
 	
 	SavedCursorX = -1;
 
+
+	// EMNLGLSN
+	/*
 	// Zero out maps.
 	for (INT i=0; i<512; i++)
 		KeysymMap[i] = 0;
@@ -122,7 +121,7 @@ USDLViewport::USDLViewport()
 
 	// Remap important keys.
 	// EMNLGLSN
-	/*
+	
 	// TTY Functions.
 	KeysymMap[SDLK_BACKSPACE]= IK_Backspace;
 	KeysymMap[SDLK_TAB]	= IK_Tab;
@@ -207,10 +206,6 @@ USDLViewport::USDLViewport()
 	KeysymMap[SDLK_SCROLLLOCK]	= IK_ScrollLock;
 	*/
 
-#if MACOSX  // !!! FIXME: Arguably, a bug in SDL...
-	KeysymMap[SDLK_PRINT]	= IK_F13;
-	KeysymMap[SDLK_INSERT]	= IK_Help;
-#endif
 
 	KeyRepeatKey = 0;
 	KeyRepeatUnicode = 0;
@@ -223,7 +218,7 @@ USDLViewport::USDLViewport()
 //
 // Destroy.
 //
-void USDLViewport::Destroy()
+void USDLViewport::Destroy() //TODO: dont forget properly destroy window
 {
 	guard(USDLViewport::Destroy);
 	Super::Destroy();
@@ -237,16 +232,6 @@ void USDLViewport::Destroy()
         TextToSpeechObject = -1;
     }
 
-    #if MACOSX
-    if (MacTextToSpeechEnabled)
-    {
-        StopSpeech(MacTextToSpeechChannel);
-        DisposeSpeechChannel(MacTextToSpeechChannel);
-        SpeechQueue.Empty();
-        MacTextToSpeechEnabled = 0;
-    }
-    #endif
-
 	unguard;
 }
 
@@ -259,18 +244,19 @@ void USDLViewport::ShutdownAfterError()
 	Super::ShutdownAfterError();
 }
 
-
+// EMNLGLSN
+/*
 void USDLViewport::UpdateMouseGrabState()
 {
-	SDL_Surface* surface = SDL_GetWindowSurface(Window);//SDL_GetVideoSurface();
 	MouseIsGrabbed = 0;
-	if (surface != NULL)
+	if (Window != NULL)
 	{
+		MouseIsGrabbed = (SDL_GetWindowFlags(Window) & SDL_WINDOW_FULLSCREEN || SDL_GetWindowMouseGrab(Window));
 		//MouseIsGrabbed = ( (surface->flags & SDL_FULLSCREEN) ||
-		                   //(SDL_WM_GrabInput(SDL_GRAB_QUERY) == SDL_GRAB_ON) );
+		                   //(SDL_WM_GrabInput(SDL_GRAB_QUERY) == SDL_GRAB_ON) );//SDL_CaptureMouse(bool enabled);
 	}
 }
-
+*/
 
 /*-----------------------------------------------------------------------------
 	Command line.
@@ -483,6 +469,7 @@ UBOOL USDLViewport::Exec( const TCHAR* Cmd, FOutputDevice& Ar )
 		Y = appAtoi(CmdTemp);
 		
         //FIXME SDL_WarpMouse(X, Y);
+		SDL_WarpMouseInWindow( Window , 0, 0);
         return 1;
 	}
 
@@ -553,25 +540,6 @@ void USDLViewport::OpenWindow( PTRINT InParentWindow, UBOOL IsTemporary, INT New
         }
     }
 
-    #if MACOSX
-    if (!MacTextToSpeechEnabled)
-    {
-        if (C->MacNativeTextToSpeech)
-        {
-            int rc = (int) NewSpeechChannel(NULL, &MacTextToSpeechChannel);
-            if (rc != 0)
-                debugf(TEXT("TTS: NewSpeechChannel() failed! rc==%d"), rc);
-            else
-            {
-                debugf(TEXT("TTS: Native MacOS X text-to-speech enabled."));
-                MacTextToSpeechEnabled = 1;
-            }
-        }
-
-        if (!MacTextToSpeechEnabled)
-            debugf(TEXT("TTS: Native MacOS X text-to-speech is NOT enabled."));
-    }
-    #endif
 
 	if( NewX!=INDEX_NONE )
 		NewX = Align( NewX, 2 );
@@ -871,24 +839,27 @@ void USDLViewport::SetMouseCapture( UBOOL Capture, UBOOL Clip, UBOOL OnlyFocus )
 	if( Capture )
 	{
 		if (SavedCursorX == -1) {
-			//FIXME   SDL_GetMouseState(&SavedCursorX, &SavedCursorY);
+				SDL_GetMouseState((float *) &SavedCursorX, (float*)&SavedCursorY);
 			}
 
 		//FIXME SDL_WM_GrabInput(SDL_GRAB_ON);
+		SDL_SetWindowMouseGrab(Window, true);
 	}
 	else
 	{
 		//FIXME SDL_WM_GrabInput(SDL_GRAB_OFF);
+		SDL_SetWindowMouseGrab(Window, false);
 
-        #if 0  // !!! FIXME: This is screwey on the main menu (pops mouse on quit dialog)
-  		if( GetOuterUSDLClient()->Engine->edcamMouseControl( this ) == MOUSEC_Locked )
-            SDL_WarpMouse(SavedCursorX, SavedCursorY);
+        #if 1  // !!! FIXME: This is screwey on the main menu (pops mouse on quit dialog)
+		if (GetOuterUSDLClient()->Engine->edcamMouseControl(this) == MOUSEC_Locked)
+			//SDL_WarpMouse(SavedCursorX, SavedCursorY);
+			SDL_WarpMouseInWindow( Window, (float)SavedCursorX, (float)SavedCursorY ); //BULLSHIT ALERT
         #endif
 
   		SavedCursorX = -1;
 	}
 
-	UpdateMouseGrabState();
+	// EMNLGLSN	UpdateMouseGrabState();
 
 	unguard;
 }
@@ -967,46 +938,6 @@ void USDLViewport::UpdateInput( UBOOL Reset, FLOAT DeltaSeconds )
 					Event.key.keysym.unicode = Event.key.keysym.sym;
 				} */
 
-                #if MACOSX
-                // !!! FIXME: *LOCK is broken, look at it later. --ryan.
-				if ( (Event.key.keysym.sym == SDLK_NUMLOCK) ||
-                     (Event.key.keysym.sym == SDLK_CAPSLOCK) ||
-                     (Event.key.keysym.sym == SDLK_SCROLLOCK) )
-                    break;
-
-				if ( (Event.key.keysym.sym == SDLK_q) )
-                {
-                    if (Client->AllowCommandQKeys)
-                    {
-                        if (SDL_GetKeyState(NULL)[SDLK_LMETA])
-                        {
-                            debugf(TEXT("Command-Q hit...quitting game!"));
-                            appRequestExit(0);
-                        }
-                    }
-                }
-
-                // !!! FIXME: Should really be a lookup table. --ryan.
-				else if ( (Event.key.keysym.sym >= SDLK_KP0) &&
-                          (Event.key.keysym.sym <= SDLK_KP9) )
-                {
-                    bool num = (SDL_GetKeyState(NULL)[SDLK_NUMLOCK] != 0);
-                    if (Event.key.keysym.mod & KMOD_SHIFT)
-                        num = !num;
-                    if (num)
-                        Event.key.keysym.sym = (SDLKey) ('0' + (((int) Event.key.keysym.sym) - SDLK_KP0));
-                }
-
-                // !!! FIXME: Should really be a lookup table. --ryan.
-                else if (Event.key.keysym.sym == SDLK_KP_PERIOD)
-                {
-                    bool num = (SDL_GetKeyState(NULL)[SDLK_NUMLOCK] != 0);
-                    if (Event.key.keysym.mod & KMOD_SHIFT)
-                        num = !num;
-                    if (num)
-                        Event.key.keysym.sym = SDLK_PERIOD;
-                }
-                #endif
 
 				// vogel: this is a MESS - clean this part up!!!
 				
@@ -1021,7 +952,7 @@ void USDLViewport::UpdateInput( UBOOL Reset, FLOAT DeltaSeconds )
 						SDL_WM_GrabInput(SDL_GRAB_ON);
 					}
 					*/
-					UpdateMouseGrabState();
+					// EMNLGLSN UpdateMouseGrabState();
 					// Don't pass event to engine.
 					break;
 				}
@@ -1066,6 +997,9 @@ void USDLViewport::UpdateInput( UBOOL Reset, FLOAT DeltaSeconds )
 
 				Key = UpperCase;
 
+
+				// EMNLGLSN
+				/*
 				// Check the Keysym map.
 				if (KeysymMap[Key] != 0)
 					Key = (EInputKey) KeysymMap[Key];
@@ -1080,6 +1014,7 @@ void USDLViewport::UpdateInput( UBOOL Reset, FLOAT DeltaSeconds )
 					Key = IK_Enter;
 				if (Key == (EInputKey) SDLK_DELETE)
 					Key = IK_Delete;
+				*/
 
 				// Send key to input system. 
 				if ( Key != IK_None )
@@ -1166,8 +1101,8 @@ void USDLViewport::UpdateInput( UBOOL Reset, FLOAT DeltaSeconds )
 				Key = UpperCase;
 	
 				// Check the Keysym map.
-				if (KeysymMap[Key] != 0)
-					Key = (EInputKey) KeysymMap[Key];
+				//  EMNLGLSNif (KeysymMap[Key] != 0)
+				//	Key = (EInputKey) KeysymMap[Key];
 			
 				// Release all types of this key.
 				if (Key ==(EInputKey) SDLK_BACKSPACE)
@@ -1312,11 +1247,10 @@ void USDLViewport::UpdateInput( UBOOL Reset, FLOAT DeltaSeconds )
 				break;
 
 			// EMNLGLSN
-	        /* case SDL_ACTIVEEVENT:
+	        //case SDL_ACTIVEEVENT:
                 // !!! FIXME: Workaround for bug in X11 target...
-                SDL_ShowCursor(Event.active.gain ? 0 : 1);
-                break; */
-
+                //SDL_ShowCursor(Event ? 0 : 1); //Event.active.gain
+                //break;
 			default:;
 		}
 	}
@@ -1599,10 +1533,7 @@ UBOOL USDLViewport::ResizeViewport( DWORD NewBlitFlags, INT InNewX, INT InNewY, 
 	SQWORD VideoFlags = 0;
 	INT VideoBPP   = 0;
 
-#if MACOSX
-	// !!! FIXME: Hack. --ryan.
-	VideoBPP = (RenDev->Use16bit) ? 16 : 32;
-#endif
+
 
 #if 0
 	// Pull current driver string.
@@ -1655,7 +1586,7 @@ UBOOL USDLViewport::ResizeViewport( DWORD NewBlitFlags, INT InNewX, INT InNewY, 
 	*/
 	SDL_SetWindowSize(Window, NewX, NewY);
 
-	UpdateMouseGrabState();
+	// EMNLGLSN UpdateMouseGrabState();
 
 	// Make this viewport current and update its title bar.
 	GetOuterUClient()->MakeCurrent( this );	
@@ -1666,15 +1597,6 @@ UBOOL USDLViewport::ResizeViewport( DWORD NewBlitFlags, INT InNewX, INT InNewY, 
 
 	// Update the window.
 	UpdateWindowFrame();
-
-	// workaround for bugs in OSX's SDL port. Remove this later... --ryan.
-#if MACOSX
-	if (VideoFlags & SDL_FULLSCREEN)
-		SDL_WM_GrabInput(SDL_GRAB_ON);
-	SDL_ShowCursor(0);
-	SDL_ShowCursor(1);
-	SDL_ShowCursor(0);
-#endif
 
 	// Save info.
 	if( RenDev && !GIsEditor && bSaveSize )
@@ -1701,7 +1623,8 @@ UBOOL USDLViewport::ResizeViewport( DWORD NewBlitFlags, INT InNewX, INT InNewY, 
 	if ((VideoFlags & SDL_WINDOW_FULLSCREEN) == 0)
     {
 		// EMNLGLSN SDL_WM_GrabInput(Client->CaptureMouse ? SDL_GRAB_ON : SDL_GRAB_OFF);
-    	UpdateMouseGrabState();
+		SDL_SetWindowMouseGrab(Window, Client->CaptureMouse ? true : false);
+		// EMNLGLSN UpdateMouseGrabState();
     }
 
 	return 1;
@@ -1719,28 +1642,7 @@ TCHAR * USDLViewport::GetLocalizedKeyName( EInputKey Key )
 
 void USDLViewport::UpdateSpeech()
 {
-    #if MACOSX
-    if (MacTextToSpeechEnabled)
-    {
-        if (SpeechQueue.Num())
-        {
-            if (!SpeechBusy())
-            {
-                FString &str = SpeechQueue(0);
-                INT len = str.Len();
-                char *cvt = (char *) appAlloca(len + 2);
-                if (cvt)
-                {
-                    appToAnsi(*str, cvt);
-                    int rc = (int) SpeakText(MacTextToSpeechChannel, cvt, len);
-                    if (rc != 0)
-                        debugf(TEXT("TTS: Failed to speak text! rc==%d"), rc);
-                }
-                SpeechQueue.Remove(0);
-            }
-        }
-    }
-    #endif
+
 }
 
 
@@ -1749,14 +1651,6 @@ void USDLViewport::TextToSpeech( const FString& Text, FLOAT Volume )
     INT len = Text.Len();
     if (len == 0)
         return;
-
-    #if MACOSX
-    if (MacTextToSpeechEnabled)
-    {
-        if (SpeechQueue.Num() < 150)  // in case of irc flood...
-			new(SpeechQueue) FString(Text);
-    }
-    #endif
 
     if (TextToSpeechObject != -1)
     {
