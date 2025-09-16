@@ -144,7 +144,7 @@ class USDLViewport : public UViewport
     INT					SavedCursorY;
 
 	// SDL Keysym to EInputKey map.
-	//BYTE				KeysymMap[512];
+	DWORD				KeysymMap[512];//BYTE
 
 	// KeyRepeatKey.
     INT					KeyRepeatKey;

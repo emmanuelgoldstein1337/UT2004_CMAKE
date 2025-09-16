@@ -10,7 +10,6 @@ Revision history:
 =============================================================================*/
 
 #include <stdlib.h>
-//#include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -70,13 +69,6 @@ USDLViewport::USDLViewport()
 {
 	guard(USDLViewport::USDLViewport);
 
-	Window = SDL_CreateWindow("NULL", 640, 480, SDL_WINDOW_OPENGL);
-	Context = SDL_GL_CreateContext( Window );
-	ScreenSurface = SDL_GetWindowSurface( Window );
-	SDL_GL_MakeCurrent(Window, Context);
-	//SDL_WarpMouseInWindow(0, 640, 480);
-	//SDL_CaptureMouse(true);
-	SDL_SetWindowRelativeMouseMode( Window, true );
     FullscreenOnly = 0;
 
     TextToSpeechObject = -1;
@@ -113,99 +105,140 @@ USDLViewport::USDLViewport()
 
 
 	// EMNLGLSN
-	/*
+	
 	// Zero out maps.
 	for (INT i=0; i<512; i++)
-		KeysymMap[i] = 0;
+		KeysymMap[i] = 0;//zero
 
 
 	// Remap important keys.
 	// EMNLGLSN
 	
 	// TTY Functions.
-	KeysymMap[SDLK_BACKSPACE]= IK_Backspace;
-	KeysymMap[SDLK_TAB]	= IK_Tab;
-	KeysymMap[SDLK_RETURN]	= IK_Enter;
-	KeysymMap[SDLK_PAUSE]	= IK_Pause;
-	KeysymMap[SDLK_ESCAPE]	= IK_Escape;
-	KeysymMap[SDLK_DELETE]	= IK_Delete;
-	KeysymMap[SDLK_INSERT]  = IK_Insert;
+	KeysymMap[SDL_SCANCODE_BACKSPACE]= IK_Backspace; //SDL_SCANCODE_KP_BACKSPACE
+	KeysymMap[SDL_SCANCODE_TAB]	= IK_Tab;
+	KeysymMap[SDL_SCANCODE_RETURN]	= IK_Enter;
+	KeysymMap[SDL_SCANCODE_PAUSE]	= IK_Pause;
+	KeysymMap[SDL_SCANCODE_ESCAPE]	= IK_Escape;
+	KeysymMap[SDL_SCANCODE_DELETE]	= IK_Delete;
+	KeysymMap[SDL_SCANCODE_INSERT]  = IK_Insert;
 
 	// Modifiers.
-	KeysymMap[SDLK_LSHIFT]	= IK_LShift;
-	KeysymMap[SDLK_RSHIFT]	= IK_RShift;
-	KeysymMap[SDLK_LCTRL]	= IK_LControl;
-	KeysymMap[SDLK_RCTRL]	= IK_RControl;
-	KeysymMap[SDLK_LMETA]	= IK_F24;
-	KeysymMap[SDLK_RMETA]	= IK_F24;
-	KeysymMap[SDLK_LALT]	= IK_Alt;
-	KeysymMap[SDLK_RALT]	= IK_Alt;
+	KeysymMap[SDL_SCANCODE_LSHIFT]	= IK_LShift;
+	KeysymMap[SDL_SCANCODE_RSHIFT]	= IK_RShift;
+	KeysymMap[SDL_SCANCODE_LCTRL]	= IK_LControl;
+	KeysymMap[SDL_SCANCODE_RCTRL]	= IK_RControl;
+	KeysymMap[SDL_SCANCODE_LGUI]	= IK_F24;
+	KeysymMap[SDL_SCANCODE_RGUI]	= IK_F24;
+	KeysymMap[SDL_SCANCODE_LALT]	= IK_Alt;
+	KeysymMap[SDL_SCANCODE_RALT]	= IK_Alt;
 	
 	// Special remaps.
-	KeysymMap[SDLK_GRAVE] = IK_Tilde;
-	KeysymMap[SDLK_APOSTROPHE] = IK_SingleQuote;
-	KeysymMap[SDLK_SEMICOLON] = IK_Semicolon;
-	KeysymMap[SDLK_COMMA] = IK_Comma;
-	KeysymMap[SDLK_PERIOD] = IK_Period;
-	KeysymMap[SDLK_SLASH] = IK_Slash;
-	KeysymMap[SDLK_BACKSLASH] = IK_Backslash;
-	KeysymMap[SDLK_LEFTBRACKET]  = IK_LeftBracket;
-	KeysymMap[SDLK_RIGHTBRACKET] = IK_RightBracket;
+	KeysymMap[SDL_SCANCODE_GRAVE] = IK_Tilde;
+	KeysymMap[SDL_SCANCODE_APOSTROPHE] = IK_SingleQuote;
+	KeysymMap[SDL_SCANCODE_SEMICOLON] = IK_Semicolon;
+	KeysymMap[SDL_SCANCODE_COMMA] = IK_Comma;
+	KeysymMap[SDL_SCANCODE_PERIOD] = IK_Period;
+	KeysymMap[SDL_SCANCODE_SLASH] = IK_Slash;
+	KeysymMap[SDL_SCANCODE_BACKSLASH] = IK_Backslash;
+	KeysymMap[SDL_SCANCODE_LEFTBRACKET]  = IK_LeftBracket;
+	KeysymMap[SDL_SCANCODE_RIGHTBRACKET] = IK_RightBracket;
  
 	// Misc function keys.
-	KeysymMap[SDLK_F1]	= IK_F1;
-	KeysymMap[SDLK_F2]	= IK_F2;
-	KeysymMap[SDLK_F3]	= IK_F3;
-	KeysymMap[SDLK_F4]	= IK_F4;
-	KeysymMap[SDLK_F5]	= IK_F5;
-	KeysymMap[SDLK_F6]	= IK_F6;
-	KeysymMap[SDLK_F7]	= IK_F7;
-	KeysymMap[SDLK_F8]	= IK_F8;
-	KeysymMap[SDLK_F9]	= IK_F9;
-	KeysymMap[SDLK_F10]	= IK_F10;
-	KeysymMap[SDLK_F11]	= IK_F11;
-	KeysymMap[SDLK_F12]	= IK_F12;
-	KeysymMap[SDLK_F13]	= IK_F13;
-	KeysymMap[SDLK_F14]	= IK_F14;
-	KeysymMap[SDLK_F15]	= IK_F15;
+	KeysymMap[SDL_SCANCODE_F1]	= IK_F1;
+	KeysymMap[SDL_SCANCODE_F2]	= IK_F2;
+	KeysymMap[SDL_SCANCODE_F3]	= IK_F3;
+	KeysymMap[SDL_SCANCODE_F4]	= IK_F4;
+	KeysymMap[SDL_SCANCODE_F5]	= IK_F5;
+	KeysymMap[SDL_SCANCODE_F6]	= IK_F6;
+	KeysymMap[SDL_SCANCODE_F7]	= IK_F7;
+	KeysymMap[SDL_SCANCODE_F8]	= IK_F8;
+	KeysymMap[SDL_SCANCODE_F9]	= IK_F9;
+	KeysymMap[SDL_SCANCODE_F10]	= IK_F10;
+	KeysymMap[SDL_SCANCODE_F11]	= IK_F11;
+	KeysymMap[SDL_SCANCODE_F12]	= IK_F12;
+	KeysymMap[SDL_SCANCODE_F13]	= IK_F13;
+	KeysymMap[SDL_SCANCODE_F14]	= IK_F14;
+	KeysymMap[SDL_SCANCODE_F15]	= IK_F15;
 
 	// Cursor control and motion.
-	KeysymMap[SDLK_HOME]	= IK_Home;
-	KeysymMap[SDLK_LEFT]	= IK_Left;
-	KeysymMap[SDLK_UP]	= IK_Up;
-	KeysymMap[SDLK_RIGHT]	= IK_Right;
-	KeysymMap[SDLK_DOWN]	= IK_Down;
-	KeysymMap[SDLK_PAGEUP]	= IK_PageUp;
-	KeysymMap[SDLK_PAGEDOWN]= IK_PageDown;
-	KeysymMap[SDLK_END]	= IK_End;
+	KeysymMap[SDL_SCANCODE_HOME]	= IK_Home;
+	KeysymMap[SDL_SCANCODE_LEFT]	= IK_Left;
+	KeysymMap[SDL_SCANCODE_UP]	= IK_Up;
+	KeysymMap[SDL_SCANCODE_RIGHT]	= IK_Right;
+	KeysymMap[SDL_SCANCODE_DOWN]	= IK_Down;
+	KeysymMap[SDL_SCANCODE_PAGEUP]	= IK_PageUp;
+	KeysymMap[SDL_SCANCODE_PAGEDOWN]= IK_PageDown;
+	KeysymMap[SDL_SCANCODE_END]	= IK_End;
 
 	// Keypad functions and numbers.
-	KeysymMap[SDLK_KP_ENTER]= IK_Enter;
-	KeysymMap[SDLK_KP_0]	= IK_NumPad0;
-	KeysymMap[SDLK_KP_1]	= IK_NumPad1;
-	KeysymMap[SDLK_KP_2]	= IK_NumPad2;
-	KeysymMap[SDLK_KP_3]	= IK_NumPad3;
-	KeysymMap[SDLK_KP_4]	= IK_NumPad4;
-	KeysymMap[SDLK_KP_5]	= IK_NumPad5;
-	KeysymMap[SDLK_KP_6]	= IK_NumPad6;
-	KeysymMap[SDLK_KP_7]	= IK_NumPad7;
-	KeysymMap[SDLK_KP_8]	= IK_NumPad8;
-	KeysymMap[SDLK_KP_9]	= IK_NumPad9;
-	KeysymMap[SDLK_KP_MULTIPLY]= IK_GreyStar;
-	KeysymMap[SDLK_KP_PLUS]	= IK_GreyPlus;
-	KeysymMap[SDLK_KP_EQUALS] = IK_Separator;
-	KeysymMap[SDLK_KP_MINUS] = IK_GreyMinus;
-	KeysymMap[SDLK_KP_PERIOD] = IK_NumPadPeriod;
-	KeysymMap[SDLK_KP_DIVIDE] = IK_GreySlash;
+	KeysymMap[SDL_SCANCODE_KP_ENTER]= IK_Enter;
+	KeysymMap[SDL_SCANCODE_KP_0]	= IK_NumPad0;
+	KeysymMap[SDL_SCANCODE_KP_1]	= IK_NumPad1;
+	KeysymMap[SDL_SCANCODE_KP_2]	= IK_NumPad2;
+	KeysymMap[SDL_SCANCODE_KP_3]	= IK_NumPad3;
+	KeysymMap[SDL_SCANCODE_KP_4]	= IK_NumPad4;
+	KeysymMap[SDL_SCANCODE_KP_5]	= IK_NumPad5;
+	KeysymMap[SDL_SCANCODE_KP_6]	= IK_NumPad6;
+	KeysymMap[SDL_SCANCODE_KP_7]	= IK_NumPad7;
+	KeysymMap[SDL_SCANCODE_KP_8]	= IK_NumPad8;
+	KeysymMap[SDL_SCANCODE_KP_9]	= IK_NumPad9;
+	KeysymMap[SDL_SCANCODE_KP_MULTIPLY]= IK_GreyStar;
+	KeysymMap[SDL_SCANCODE_KP_PLUS]	= IK_GreyPlus;
+	KeysymMap[SDL_SCANCODE_KP_EQUALS] = IK_Separator;
+	KeysymMap[SDL_SCANCODE_KP_MINUS] = IK_GreyMinus;
+	KeysymMap[SDL_SCANCODE_KP_PERIOD] = IK_NumPadPeriod;
+	KeysymMap[SDL_SCANCODE_KP_DIVIDE] = IK_GreySlash;
 
 	// Other
-	KeysymMap[SDLK_MINUS]	= IK_Minus;
-	KeysymMap[SDLK_EQUALS]	= IK_Equals;     
-	KeysymMap[SDLK_NUMLOCKCLEAR]	= IK_NumLock;
-	KeysymMap[SDLK_CAPSLOCK]	= IK_CapsLock;
-	KeysymMap[SDLK_SCROLLLOCK]	= IK_ScrollLock;
-	*/
+	KeysymMap[SDL_SCANCODE_MINUS]	= IK_Minus;
+	KeysymMap[SDL_SCANCODE_EQUALS]	= IK_Equals;     
+	KeysymMap[SDL_SCANCODE_NUMLOCKCLEAR]	= IK_NumLock;
+	KeysymMap[SDL_SCANCODE_CAPSLOCK]	= IK_CapsLock;
+	KeysymMap[SDL_SCANCODE_SCROLLLOCK]	= IK_ScrollLock;
+	
+	// Numbers
+		// Keypad functions and numbers.
+	KeysymMap[SDL_SCANCODE_0] = IK_0;
+	KeysymMap[SDL_SCANCODE_1] = IK_1;
+	KeysymMap[SDL_SCANCODE_2] = IK_2;
+	KeysymMap[SDL_SCANCODE_3] = IK_3;
+	KeysymMap[SDL_SCANCODE_4] = IK_4;
+	KeysymMap[SDL_SCANCODE_5] = IK_5;
+	KeysymMap[SDL_SCANCODE_6] = IK_6;
+	KeysymMap[SDL_SCANCODE_7] = IK_7;
+	KeysymMap[SDL_SCANCODE_8] = IK_8;
+	KeysymMap[SDL_SCANCODE_9] = IK_9;
 
+	// Another
+	KeysymMap[SDL_SCANCODE_SPACE] = IK_Space;
+	// Letters. Yes, i can't do this in cycle
+	KeysymMap[SDL_SCANCODE_A] = IK_A;
+	KeysymMap[SDL_SCANCODE_B] = IK_B;
+	KeysymMap[SDL_SCANCODE_C] = IK_C;
+	KeysymMap[SDL_SCANCODE_D] = IK_D;
+	KeysymMap[SDL_SCANCODE_E] = IK_E;
+	KeysymMap[SDL_SCANCODE_F] = IK_F;
+	KeysymMap[SDL_SCANCODE_G] = IK_G;
+	KeysymMap[SDL_SCANCODE_H] = IK_H;
+	KeysymMap[SDL_SCANCODE_I] = IK_I;
+	KeysymMap[SDL_SCANCODE_J] = IK_J;
+	KeysymMap[SDL_SCANCODE_K] = IK_K;
+	KeysymMap[SDL_SCANCODE_L] = IK_L;
+	KeysymMap[SDL_SCANCODE_M] = IK_M;
+	KeysymMap[SDL_SCANCODE_N] = IK_N;
+	KeysymMap[SDL_SCANCODE_O] = IK_O;
+	KeysymMap[SDL_SCANCODE_P] = IK_P;
+	KeysymMap[SDL_SCANCODE_Q] = IK_Q;
+	KeysymMap[SDL_SCANCODE_R] = IK_R;
+	KeysymMap[SDL_SCANCODE_S] = IK_S;
+	KeysymMap[SDL_SCANCODE_T] = IK_T;
+	KeysymMap[SDL_SCANCODE_U] = IK_U;
+	KeysymMap[SDL_SCANCODE_V] = IK_V;
+	KeysymMap[SDL_SCANCODE_W] = IK_W;
+	KeysymMap[SDL_SCANCODE_X] = IK_X;
+	KeysymMap[SDL_SCANCODE_Y] = IK_Y;
+	KeysymMap[SDL_SCANCODE_Z] = IK_Z;
 
 	KeyRepeatKey = 0;
 	KeyRepeatUnicode = 0;
@@ -469,7 +502,7 @@ UBOOL USDLViewport::Exec( const TCHAR* Cmd, FOutputDevice& Ar )
 		Y = appAtoi(CmdTemp);
 		
         //FIXME SDL_WarpMouse(X, Y);
-		SDL_WarpMouseInWindow( Window , 0, 0);
+		//SDL_WarpMouseInWindow( Window , 0, 0);
         return 1;
 	}
 
@@ -501,6 +534,12 @@ UBOOL USDLViewport::Exec( const TCHAR* Cmd, FOutputDevice& Ar )
 void USDLViewport::OpenWindow( PTRINT InParentWindow, UBOOL IsTemporary, INT NewX, INT NewY, INT OpenX, INT OpenY )
 {
 	guard(USDLViewport::OpenWindow);
+
+	Window = SDL_CreateWindow("NULL", 640, 480, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+	Context = SDL_GL_CreateContext(Window);
+	ScreenSurface = SDL_GetWindowSurface(Window); // This function must be called every time window resised
+	SDL_GL_MakeCurrent(Window, Context);
+	SDL_SetWindowRelativeMouseMode(Window, true); // Maybe i need move this to another location
 
     // Can't do multiple windows with SDL 1.2.
     // Eh...Splash screen. !!! FIXME.
@@ -586,7 +625,10 @@ void USDLViewport::OpenWindow( PTRINT InParentWindow, UBOOL IsTemporary, INT New
 void USDLViewport::CloseWindow()
 {
 	guard(USDLViewport::CloseWindow);
-    /* no-op. */
+	
+	SDL_DestroyWindow(Window);
+	SDL_GL_DestroyContext(Context);
+
 	unguard;
 }
 
@@ -843,17 +885,17 @@ void USDLViewport::SetMouseCapture( UBOOL Capture, UBOOL Clip, UBOOL OnlyFocus )
 			}
 
 		//FIXME SDL_WM_GrabInput(SDL_GRAB_ON);
-		SDL_SetWindowMouseGrab(Window, true);
+		//SDL_SetWindowMouseGrab(Window, true);
 	}
 	else
 	{
 		//FIXME SDL_WM_GrabInput(SDL_GRAB_OFF);
-		SDL_SetWindowMouseGrab(Window, false);
+		//SDL_SetWindowMouseGrab(Window, false);
 
         #if 1  // !!! FIXME: This is screwey on the main menu (pops mouse on quit dialog)
 		if (GetOuterUSDLClient()->Engine->edcamMouseControl(this) == MOUSEC_Locked)
 			//SDL_WarpMouse(SavedCursorX, SavedCursorY);
-			SDL_WarpMouseInWindow( Window, (float)SavedCursorX, (float)SavedCursorY ); //BULLSHIT ALERT
+			//SDL_WarpMouseInWindow( Window, (float)SavedCursorX, (float)SavedCursorY ); //BULLSHIT ALERT
         #endif
 
   		SavedCursorX = -1;
@@ -876,37 +918,13 @@ void USDLViewport::UpdateInput( UBOOL Reset, FLOAT DeltaSeconds )
 
 	USDLClient* Client = GetOuterUSDLClient();
 
-    if ((Client->UseJoystick) && (USDLClient::Joystick != NULL))
-    {
-        SDL_UpdateJoysticks();
-
-        int i;
-        int max = USDLClient::JoystickButtons;
-
-		//FIXME
-		/*
-        for (i = 0; i < max; i++)
-        {
-            Uint8 state = SDL_GetJoystickButton(USDLClient::Joystick, i);
-		    INT Button = IK_Joy1 + i;
-			if( !Input->KeyDown( Button ) && (state == SDL_PRESSED) )
-				CauseInputEvent( Button, IST_Press );
-			else if( Input->KeyDown( Button ) && (state != SDL_PRESSED) )
-				CauseInputEvent( Button, IST_Release );
-        }
-		*/
-
-        static EInputKey axes[] = { IK_JoyX, IK_JoyY, IK_JoyZ, IK_JoyR, IK_JoyU, IK_JoyV, IK_JoySlider1, IK_JoySlider2 };
-        check(USDLClient::JoystickAxes <= 8);
-        for (i = 0; i < USDLClient::JoystickAxes; i++)
-        {
-            float pos = SDL_GetJoystickAxis(USDLClient::Joystick, i) / 65535.f;
-		    Input->DirectAxis(axes[i], pos, DeltaSeconds);
-        }
+	if ((Client->UseJoystick) && (USDLClient::Joystick != NULL))
+	{
+		SDL_UpdateJoysticks();
 	}
 
 	// Keyboard.
-	EInputKey Key 	    = IK_None;
+	EInputKey Key = IK_None;
 	EInputKey UpperCase = IK_None;
 	EInputKey LowerCase = IK_None;
 
@@ -916,417 +934,135 @@ void USDLViewport::UpdateInput( UBOOL Reset, FLOAT DeltaSeconds )
 	INT DX = 0, DY = 0;
 	EInputKey ThisJoyHat = IK_None;
 
-    bool mouse_focus, input_focus, app_focus;
-
-	char* sdl_error;
 	SDL_Event Event;
-	while( SDL_PollEvent( &Event ) )
+	while (SDL_PollEvent(&Event))
 	{
-		switch( Event.type )
+		switch (Event.type)
 		{
-            case SDL_EVENT_QUIT:
-                GIsRequestingExit = 1;
-                break;
-
-			case SDL_EVENT_KEY_DOWN:
-				// Unicode on X11 may map CTRL-a to ASCII equivalents.
-				/* // EMNLGLSN
-				if ( (Event.key.keysym.unicode >= 1) &&
-				     (Event.key.keysym.unicode <= 31) &&
-				     (Event.key.keysym.mod & SDL_KMOD_CTRL) )
-				{
-					Event.key.keysym.unicode = Event.key.keysym.sym;
-				} */
-
-
-				// vogel: this is a MESS - clean this part up!!!
-				
-				if ( (Event.key.key == SDLK_G) && (Event.key.mod & SDL_KMOD_CTRL) )
-				{
-					//FIXME 
-					/* SDL_GrabMode mode = SDL_WM_GrabInput(SDL_GRAB_QUERY);
-					if ( mode == SDL_GRAB_ON ) 
-					{
-						SDL_WM_GrabInput(SDL_GRAB_OFF);
-					} else {
-						SDL_WM_GrabInput(SDL_GRAB_ON);
-					}
-					*/
-					// EMNLGLSN UpdateMouseGrabState();
-					// Don't pass event to engine.
-					break;
+		case SDL_EVENT_QUIT:
+			GIsRequestingExit = 1;
+			break;
+		case SDL_EVENT_KEY_DOWN:
+			Key = (EInputKey)KeysymMap[Event.key.scancode];
+			CauseInputEvent(Key, IST_Press);
+			if(Key >= IK_A && Key <= IK_Z) //Lowercase a in 97 //IK_Z
+			{
+				if (Event.key.mod & SDL_KMOD_SHIFT) {
+					Client->Engine->Key(this, Key, (TCHAR)Key);
 				}
-		
-				else if ( (Event.key.key == SDLK_RETURN) && (Event.key.key & SDL_KMOD_ALT) )
-				{
-					ToggleFullscreen();
-					// Don't pass event to engine.
-					break;
+				else {
+					Client->Engine->Key(this, Key, (TCHAR)Key+32);
 				}
-				// Reset timer.
-				RepeatTimer = appSeconds();
-				LastKey = true;
+			}
+			else {
+				Client->Engine->Key(this, Key, (TCHAR)Key);
+			}
+			break;
+		case SDL_EVENT_KEY_UP:
+			Key = (EInputKey)KeysymMap[Event.key.scancode];
+			CauseInputEvent(Key, IST_Release);
+			break;
+		// Mouse:
+		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			switch (Event.button.button)
+			{
+			case 1:
+				Key = IK_LeftMouse;
+				break;
+			case 2:
+				Key = IK_MiddleMouse;
+				break;
+			case 3:
+				Key = IK_RightMouse;
+				break;
+			case 4:
+				Key = IK_MouseWheelUp;
+				break;
+			case 5:
+				Key = IK_MouseWheelDown;
+				break;
+			case 6:
+				Key = IK_Mouse4;
+				break;
+			case 7:
+				Key = IK_Mouse5;
+				break;
+			case 8:
+				Key = IK_Mouse6;
+				break;
+			case 9:
+				Key = IK_Mouse7;
+				break;
+			case 10:
+				Key = IK_Mouse8;
+				break;
+			}
+			// Send to input system.
+			CauseInputEvent(Key, IST_Press);
+			break;
+		case SDL_EVENT_MOUSE_BUTTON_UP:
+			switch (Event.button.button)
+			{
+			case 1:
+				Key = IK_LeftMouse;
+				break;
+			case 2:
+				Key = IK_MiddleMouse;
+				break;
+			case 3:
+				Key = IK_RightMouse;
+				break;
+			case 4:
+				Key = IK_MouseWheelUp; // Maybe we need something else this
+				break;
+			case 5:
+				Key = IK_MouseWheelDown; // Maybe we need something else this
+				break;
+			case 6:
+				Key = IK_Mouse4;
+				break;
+			case 7:
+				Key = IK_Mouse5;
+				break;
+			case 8:
+				Key = IK_Mouse6;
+				break;
+			case 9:
+				Key = IK_Mouse7;
+				break;
+			case 10:
+				Key = IK_Mouse8;
+				break;
+			}
+			// Send to input system.
+			CauseInputEvent(Key, IST_Release);
+			break;
 
-				Key = (EInputKey) Event.key.key;
-				/*if (Event.key.keysym.unicode)
-				{
-					if (Client->AllowUnicodeKeys)
-						Key = (EInputKey) Event.key.keysym.unicode;
-				}*/
-
-				// Convert to UpperCase/LowerCase values. If not
-				// a letter, leave alone
-				if ((Key >= ((EInputKey) SDLK_A)) && (Key <= ((EInputKey) SDLK_Z))) 
-				{
-					LowerCase = Key;
-					UpperCase = (EInputKey) (Key - 32);
-				} 
-				else if ((Key >= ((EInputKey) (SDLK_A - 32))) && (Key <= ((EInputKey) (SDLK_Z - 32)))) 
-				{
-					UpperCase = Key;
-					LowerCase = (EInputKey) (Key + 32);
-				} 
-				else 	
-				{
-					UpperCase = Key;
-					LowerCase = Key;
+		case SDL_EVENT_MOUSE_WHEEL: //TODO: rewrite this
+			if (Event.wheel.integer_y > 0) {
+				Key = IK_MouseWheelUp;
 				}
-				// Always send upper case letters to the system.
-				// The engine NEVER processes lowercase letters, 
-				// since lowercase keycodes are mapped to the F keys
-
-				Key = UpperCase;
-
-
-				// EMNLGLSN
-				/*
-				// Check the Keysym map.
-				if (KeysymMap[Key] != 0)
-					Key = (EInputKey) KeysymMap[Key];
-	
-				// Reset to origional values. In case below gets 
-				// munged by the above code. Shouldn't happen.
-				if (Key == (EInputKey) SDLK_BACKSPACE)
-					Key = IK_Backspace;
-				if (Key ==(EInputKey) SDLK_TAB)
-					Key = IK_Tab;
-				if (Key == (EInputKey) SDLK_RETURN)
-					Key = IK_Enter;
-				if (Key == (EInputKey) SDLK_DELETE)
-					Key = IK_Delete;
-				*/
-
-				// Send key to input system. 
-				if ( Key != IK_None )
-				{
-					if (Key >= IK_MAX)  // !!! FIXME
-						debugf(TEXT("Unsupported SDL key id (0x%X)"), (int) Event.key.key);
-					else
-					{
-						// !!! FIXME: Total hack. '(' is IK_DOWN.  :(  --ryan.
-						if ((Key != '(') || (Event.key.key == SDLK_DOWN))
-					        	CauseInputEvent( Key, IST_Press );
-					}
-				}
-
-				if ( Event.key.mod & SDL_KMOD_SHIFT )
-					Key = UpperCase;
-				else	
-					Key = LowerCase;
-		
-				KeyRepeatKey = Key;
-				//KeyRepeatUnicode = (TCHAR) Event.key.keysym.unicode;
-		
-				// Send to text processor
-				// EMNLGLSN
-				/*
-				if (	(Event.key.key != SDLK_DELETE  ) && 
-					(Event.key.key != SDLK_INSERT  ) && 
-					(Event.key.key < 272 ) &&
-					(Event.key.keysym.unicode < 272 ) )	
-				{
-					//printf("%i %i %i\n", Key, Event.key.keysym.sym, Event.key.keysym.unicode );		
-					Client->Engine->Key( this, Key, (TCHAR) Event.key.keysym.unicode);
-				}
-				else
-				{
-					KeyRepeatKey = IK_None;
-					KeyRepeatUnicode = 0;
-				}
-				*/
+			else {
+				Key = IK_MouseWheelDown;
+			}
+			CauseInputEvent(Key, IST_Press);
+			CauseInputEvent(Key, IST_Release);
+			break;
+		case SDL_EVENT_MOUSE_MOTION:
+			if ((!MouseIsGrabbed) && (Client->IgnoreUngrabbedMouse))
 				break;
 
-			case SDL_EVENT_KEY_UP:
-				// Unicode on X11 may map CTRL-a to ASCII equivalents.
-				/*if ((Event.key.keysym.unicode >= 1) &&
-				     (Event.key.keysym.unicode <= 31) &&
-				     (Event.key.mod & SDL_KMOD_CTRL) )
-				{
-					Event.key.keysym.unicode = Event.key.keysym.sym;
-				}*/
+			//MouseMoved = true;
+			//DX += Event.motion.xrel;
+			//DY += Event.motion.yrel;
+			CauseInputEvent(IK_MouseX, IST_Axis, Event.motion.xrel);
+			CauseInputEvent(IK_MouseY, IST_Axis, -Event.motion.yrel);
+			break;
 
-                #if MACOSX
-                // !!! FIXME: *LOCK is broken, look at it later. --ryan.
-				if ( (Event.key.keysym.sym == SDLK_NUMLOCK) ||
-                     (Event.key.keysym.sym == SDLK_CAPSLOCK) ||
-                     (Event.key.keysym.sym == SDLK_SCROLLOCK) )
-                    break;
-                #endif
-
-				Key = (EInputKey) Event.key.key;
-				/*if (Event.key.keysym.unicode)
-				{
-					if (Client->AllowUnicodeKeys)
-						Key = (EInputKey) Event.key.keysym.unicode;
-				}*/
-			
-				// Convert to UpperCase/LowerCase
-				if ((Key >= ((EInputKey) SDLK_A)) && (Key <= ((EInputKey) SDLK_Z))) 
-				{
-					LowerCase = Key;
-					UpperCase = (EInputKey) (Key - 32);
-				} 
-				else if ((Key >= ((EInputKey) (SDLK_A - 32))) && (Key <= ((EInputKey) (SDLK_Z - 32)))) 
-				{
-					UpperCase = Key;
-					LowerCase = (EInputKey) (Key + 32);
-				}
-				else 
-				{
-					UpperCase = Key;
-					LowerCase = Key;
-				}
-			
-				// Always send upper case letters to the system.
-				Key = UpperCase;
-	
-				// Check the Keysym map.
-				//  EMNLGLSNif (KeysymMap[Key] != 0)
-				//	Key = (EInputKey) KeysymMap[Key];
-			
-				// Release all types of this key.
-				if (Key ==(EInputKey) SDLK_BACKSPACE)
-					Key = IK_Backspace;
-				if (Key == (EInputKey) SDLK_TAB)
-					Key = IK_Tab;
-				if (Key ==(EInputKey) SDLK_RETURN)
-					Key = IK_Enter;
-	
-				// Send key to input system.
-				if (Key < IK_MAX)  // !!! FIXME
-					CauseInputEvent( Key, IST_Release );
-
-				// Turn off repeating. Needed for
-				// chat modes.
-				KeyRepeatKey = 0;
-				KeyRepeatUnicode = 0;
-				break;
-		
-			case SDL_EVENT_MOUSE_BUTTON_DOWN:
-				switch (Event.button.button)
-				{
-					case 1:
-						Key = IK_LeftMouse;
-						break;
-					case 2:
-						Key = IK_MiddleMouse;
-						break;
-					case 3:
-						Key = IK_RightMouse;
-						break;
-					case 4:
-						Key = IK_MouseWheelUp;
-						break;
-					case 5:
-						Key = IK_MouseWheelDown;
-						break;
-					case 6:
-						Key = IK_Mouse4;
-						break;
-					case 7:
-						Key = IK_Mouse5;
-						break;
-					case 8:
-						Key = IK_Mouse6;
-						break;
-					case 9:
-						Key = IK_Mouse7;
-						break;
-					case 10:
-						Key = IK_Mouse8;
-						break;
-				}
-				// Send to input system.
-				CauseInputEvent( Key, IST_Press );
-				break;
-
-			case SDL_EVENT_MOUSE_BUTTON_UP:
-				switch (Event.button.button)
-				{
-					case 1:
-						Key = IK_LeftMouse;
-						break;
-					case 2:
-						Key = IK_MiddleMouse;
-						break;
-					case 3:
-						Key = IK_RightMouse;
-						break;
-					case 4:
-						Key = IK_MouseWheelUp;
-						break;
-					case 5:
-						Key = IK_MouseWheelDown;
-						break;
-					case 6:
-						Key = IK_Mouse4;
-						break;
-					case 7:
-						Key = IK_Mouse5;
-						break;
-					case 8:
-						Key = IK_Mouse6;
-						break;
-					case 9:
-						Key = IK_Mouse7;
-						break;
-					case 10:
-						Key = IK_Mouse8;
-						break;
-				}
-				// Send to input system.
-				CauseInputEvent( Key, IST_Release );
-				break;
-	
-			case SDL_EVENT_MOUSE_MOTION:
-				if ((!MouseIsGrabbed) && (Client->IgnoreUngrabbedMouse))
-					break;
-
-				MouseMoved = true;
-				DX += Event.motion.xrel;
-				DY += Event.motion.yrel;
-				break;
-	
-			case SDL_EVENT_JOYSTICK_BALL_MOTION:
-				if ( Event.jball.which != Client->JoystickNumber || !Client->UseJoystick )
-	                break;
-				MouseMoved = true;
-				DX += (INT) (Event.jball.xrel * Client->ScaleJBX);
-				DY += (INT) (Event.jball.yrel * Client->ScaleJBY);
-	                break;
-	
-			case SDL_EVENT_JOYSTICK_HAT_MOTION:
-				if ( (Event.jhat.which != Client->JoystickNumber) ||
-				     (Event.jhat.hat != Client->JoystickHatNumber) ||
-				     (!Client->UseJoystick) ||
-				     (Client->IgnoreHat) )
-				{
-					break;
-				}
-
-				JoyHatMoved = true;
-
-				switch ( Event.jhat.value )
-				{
-					case SDL_HAT_UP :
-						ThisJoyHat = IK_Joy13;
-						break;
-					case SDL_HAT_DOWN :
-						ThisJoyHat = IK_Joy14;
-						break;
-					case SDL_HAT_LEFT :
-						ThisJoyHat = IK_Joy15;
-						break;
-					case SDL_HAT_RIGHT :
-						ThisJoyHat = IK_Joy16;
-						break;
-					default :
-						ThisJoyHat = (EInputKey) 0;
-						break;
-				}				
-				break;
-
-			// EMNLGLSN
-	        //case SDL_ACTIVEEVENT:
-                // !!! FIXME: Workaround for bug in X11 target...
-                //SDL_ShowCursor(Event ? 0 : 1); //Event.active.gain
-                //break;
-			default:;
+		default:
+			break;
 		}
 	}
-
-	// Deliver mouse behavior to the engine.
-	if ( MouseMoved )
-	{
-	    WindowsMouseX += DX;
-	    WindowsMouseY += DY;
-
-        if (WindowsMouseX > SizeX)
-            WindowsMouseX = SizeX;
-
-        if (WindowsMouseX < 0)
-            WindowsMouseX = 0;
-
-        if (WindowsMouseY > SizeY)
-            WindowsMouseY = SizeY;
-
-        if (WindowsMouseY < 0)
-            WindowsMouseY = 0;
-
-		// Send to input subsystem.
-		if( DX )
-			CauseInputEvent( IK_MouseX, IST_Axis, +DX );
-		      
-		if( DY )
-			CauseInputEvent( IK_MouseY, IST_Axis, -DY );
-
-		if (!Client->InMenuLoop)
-			Client->Engine->MouseDelta(this, 0, DX, DY);
-
-		if (!IsRealtime())
-		{
-			if( Input->KeyDown(IK_Space) )
-            {
-				for( INT i=0; i<Client->Viewports.Num(); i++ )
-					Client->Viewports(i)->Repaint( 1 );
-            }
-			else
-            {
-				Repaint( 1 );
-            }
-		}
-	}
-
-	if ( (LastJoyHat != ThisJoyHat) && JoyHatMoved )
-	{
-		if (LastJoyHat)
-			CauseInputEvent( LastJoyHat, IST_Release );
-		if (ThisJoyHat)	
-			CauseInputEvent( ThisJoyHat, IST_Press );		
-		LastJoyHat = ThisJoyHat;
-	} 
-
-
-	// Send WM_CHAR for down keys.
-	if ( LastKey && ( appSeconds() - RepeatTimer < 0.5 ) ) 
-		return;
-	LastKey = false;
-	if ( appSeconds() - RepeatTimer < 0.1 )
-		return;
-		
-	RepeatTimer = appSeconds();
-
-	// Deliver keyboard events to the engine	
-	if ( KeyRepeatKey )
-	{
-		if ( KeyRepeatKey == IK_Backspace )
-		{
-			CauseInputEvent( IK_Backspace, IST_Press );
-			CauseInputEvent( IK_Backspace, IST_Release );
-		}
-		else
- 			Client->Engine->Key( this, (EInputKey) KeyRepeatKey, KeyRepeatUnicode );
-	}		
 
 	unguard;
 }
@@ -1577,15 +1313,33 @@ UBOOL USDLViewport::ResizeViewport( DWORD NewBlitFlags, INT InNewX, INT InNewY, 
 
     SetTitleBar();  // This can be done before SDL_SetVideoMode().
 
-	/*FIXME
+	// OLD
+	/*
   	if ( SDL_SetVideoMode( NewX, NewY, VideoBPP, VideoFlags ) == NULL )
 	{
 		appErrorf( TEXT("Couldn't set video mode: %s\n"), appFromAnsi(SDL_GetError()) );
 		appExit();
 	}
 	*/
-	SDL_SetWindowSize(Window, NewX, NewY);
-
+	
+	//SDL_SetWindowFullscreen(Window, VideoFlags & SDL_WINDOW_FULLSCREEN);
+	//SDL_SetWindowSize(Window, NewX, NewY);
+	//ScreenSurface = SDL_GetWindowSurface(Window);
+	//SDL_RestoreWindow(Window);
+	//SDL_SetWindowPosition(Window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+	if (VideoFlags & SDL_WINDOW_FULLSCREEN) {
+		SDL_DisplayMode mode;
+		mode = *SDL_GetFullscreenDisplayModes(SDL_GetDisplays(NULL)[0], NULL)[0];
+		//mode = *SDL_GetWindowFullscreenMode(Window);
+		mode.h = NewY;
+		mode.w = NewX;
+		SDL_SetWindowFullscreenMode(Window, &mode);
+		SDL_SetWindowFullscreen(Window, true);
+	}
+	else {
+		SDL_SetWindowFullscreen(Window, false);
+		SDL_SetWindowSize(Window, NewX, NewY);
+	}
 	// EMNLGLSN UpdateMouseGrabState();
 
 	// Make this viewport current and update its title bar.

@@ -447,7 +447,7 @@ UBOOL UOpenGLRenderDevice::SetRes(UViewport* Viewport,INT NewX,INT NewY,UBOOL Fu
 	// Change window size.
 	Viewport->ResizeViewport( Fullscreen ? (BLIT_Fullscreen|BLIT_OpenGL) : (BLIT_OpenGL), NewX, NewY );
 
-#elif (defined WIN32)
+#elif (defined __NULL__)// EMNLGLSN //#elif (defined WIN32) Is this code needed?
 
 	// Get hWnd & hDC.
 	hWnd		= (HWND) Viewport->GetWindow();
@@ -591,7 +591,9 @@ UBOOL UOpenGLRenderDevice::SetRes(UViewport* Viewport,INT NewX,INT NewY,UBOOL Fu
 	}
 
 #else
-#   error Please handle this for your platform.
+//#   error Please handle this for your platform.
+	//Viewport->ResizeViewport(Fullscreen ? (BLIT_Fullscreen | BLIT_OpenGL) : (BLIT_OpenGL), NewX, NewY); // EMNLGLSN : Temporaly place this here, maybe i need to define USE_SDL
+	UBOOL Result = Viewport->ResizeViewport((Fullscreen ? BLIT_Fullscreen : 0) | BLIT_OpenGL, NewX, NewY); // EMNLGLSN : Temporaly place this here, maybe i need to define USE_SDL
 #endif
 
 	ValidContext = 1;

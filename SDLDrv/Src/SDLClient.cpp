@@ -71,7 +71,7 @@ static void sdl_atexit_handler(void)
     if (!already_called)
     {
         already_called = true;
-        SDL_QuitSubSystem(SDL_INIT_VIDEO);
+        SDL_QuitSubSystem(SDL_INIT_VIDEO);// SDL_INIT_JOYSTICK?
     }
 }
 
