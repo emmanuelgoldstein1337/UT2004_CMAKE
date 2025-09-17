@@ -996,6 +996,11 @@ template <class T> void* operator new( size_t Size, TTransArray<T>& Array, INT I
 //
 // Lazy loader base class.
 //
+//EMGL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(push,4)
+#endif
+
 class FLazyLoader
 {
 	friend class ULinkerLoad;
@@ -1122,6 +1127,12 @@ public:
 		unguard;
 	}
 };
+
+
+//EMNL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(pop)
+#endif
 
 /*-----------------------------------------------------------------------------
 	Dynamic strings.

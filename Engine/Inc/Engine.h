@@ -88,10 +88,10 @@ ENGINE_API extern class FTempLineBatcher*	GTempLineBatcher;
 	const MeReal K_U2Rad = (MeReal)0.000095875262;
 #endif
 
-
+/*
 #if SUPPORTS_PRAGMA_PACK
 #pragma pack(push,4)
-#endif
+#endif */
 
 #include "UnForcePacking_begin.h"
 
@@ -185,6 +185,10 @@ enum ECamOrientation
 };
 
 // Struct for storing Matinee camera orientations (this is mirrored in MatObject.uc and SceneManager.uc - keep all definitions in sync!)
+//EMGL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(push,4)
+#endif
 class UMatSubAction;
 struct ENGINE_API FOrientation
 {
@@ -228,6 +232,10 @@ struct ENGINE_API FOrientation
 		return (MA != Other.MA);
 	}
 };
+//EMNL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(pop)
+#endif
 
 // Ease In and Ease Out Interpolation is done by calculating the 
 // acceleration which will cover exactly half the distance in half 
@@ -384,9 +392,9 @@ typedef QWORD KModelPairType;
 
 #include "UnForcePacking_end.h"
 
-#if SUPPORTS_PRAGMA_PACK
+/* #if SUPPORTS_PRAGMA_PACK
 #pragma pack(pop)
-#endif
+#endif */
 
 
 /*-----------------------------------------------------------------------------
@@ -455,9 +463,9 @@ typedef QWORD KModelPairType;
 #undef NAMES_ONLY
 #endif
 
-#if SUPPORTS_PRAGMA_PACK
+/* #if SUPPORTS_PRAGMA_PACK
 #pragma pack(push,4)
-#endif
+#endif */
 
 #include "UnForcePacking_begin.h"
 

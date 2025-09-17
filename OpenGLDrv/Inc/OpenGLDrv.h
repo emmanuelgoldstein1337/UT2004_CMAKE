@@ -13,6 +13,7 @@
 #ifndef HEADER_OPENGLDRV
 #define HEADER_OPENGLDRV
 
+/*
 #ifdef WIN32
 #pragma pack(push,8)
 #include <windows.h>
@@ -35,6 +36,9 @@
 #define GL_STORAGE_SHARED_APPLE				0x85BF
 #define GL_VERTEX_ARRAY_RANGE_APPLE			0x851D
 #define GL_VERTEX_ARRAY_BINDING_APPLE		0x85B5
+*/
+
+#include <SDL3/SDL_opengl.h>
 
 #include "Engine.h"
 

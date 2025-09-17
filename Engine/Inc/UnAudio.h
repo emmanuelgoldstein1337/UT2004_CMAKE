@@ -30,10 +30,6 @@ class FAudioCaptureDevice;
 	#include "ENCVAG.h"
 #endif
 
-#if SUPPORTS_PRAGMA_PACK
-#pragma pack(push,4)
-#endif
-
 #include "UnForcePacking_begin.h"
 
 /*-----------------------------------------------------------------------------
@@ -351,6 +347,10 @@ public:
 //
 // Sound data.
 //
+//EMGL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(push,4)
+#endif
 class ENGINE_API FSoundData : public TLazyArray<BYTE>
 {
 public:
@@ -373,12 +373,20 @@ public:
 	: Owner( InOwner )
 	{}
 };
+//EMNL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(pop)
+#endif
 
 // gam ---
 
 //
 // A sound effect.
 //
+//EMGL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(push,4)
+#endif
 class ENGINE_API USound : public UObject
 {
 	DECLARE_CLASS(USound,UObject,CLASS_SafeReplace,Engine)
@@ -421,18 +429,22 @@ public:
 	//protected:
 
 	// Variables.
-	FSoundData	Data;
-	FName		FileType;
-	FString		Filename;
-	INT			OriginalSize;
-	FLOAT       Duration;
-	void*		Handle;
-	INT			Flags;
-	EVoiceCodec	VoiceCodec GCC_PACK(4);
-	FLOAT		InitialSeekTime;
-	FLOAT       BaseRadius; // sjs
-    FLOAT       VelocityScale; // gam
+	FSoundData	Data; //48
+	FName		FileType; //4
+	FString		Filename; //12
+	INT			OriginalSize; //4
+	FLOAT       Duration; //4
+	void*		Handle; // 4?
+	INT			Flags; // 4
+	EVoiceCodec	VoiceCodec;// GCC_PACK(4); //4
+	FLOAT		InitialSeekTime; //4
+	FLOAT       BaseRadius; // sjs //4
+    FLOAT       VelocityScale; // gam //4
 };
+//EMNL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(pop)
+#endif
 
 //
 // A modified and dynamic instance of a sound.
@@ -490,6 +502,10 @@ class ENGINE_API UProceduralSound : public USound
 //
 // A group of sounds.
 //
+//EMGL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(push,4)
+#endif
 class ENGINE_API USoundGroup : public USound
 {
     DECLARE_CLASS(USoundGroup,USound,CLASS_SafeReplace,Engine)
@@ -534,7 +550,10 @@ class ENGINE_API USoundGroup : public USound
         FLOAT TotalLikelihood;
         USound *RenderedSound;
 };
-
+//EMNL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(pop)
+#endif
 // --- gam
 
 /*-----------------------------------------------------------------------------
@@ -666,10 +685,6 @@ public:
 };
 
 #include "UnForcePacking_end.h"
-
-#if SUPPORTS_PRAGMA_PACK
-#pragma pack(pop)
-#endif
 
 /*-----------------------------------------------------------------------------
 	The End.

@@ -8985,6 +8985,10 @@ enum ESAStatus
     SASTATUS_MAX            =4,
 };
 
+//EMGL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(push,4)
+#endif
 class ENGINE_API UMatSubAction : public UMatObject
 {
 public:
@@ -8999,7 +9003,10 @@ public:
     DECLARE_CLASS(UMatSubAction,UMatObject,0,Engine)
     #include "UMatSubAction.h"
 };
-
+//EMNL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(pop)
+#endif
 
 class ENGINE_API USubActionSubTitle : public UMatSubAction
 {
@@ -9027,7 +9034,10 @@ public:
     #include "USubActionGameSpeed.h"
 };
 
-
+//EMGL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(push,4)
+#endif
 class ENGINE_API USubActionOrientation : public UMatSubAction
 {
 public:
@@ -9035,7 +9045,10 @@ public:
     DECLARE_CLASS(USubActionOrientation,UMatSubAction,0,Engine)
     #include "USubActionOrientation.h"
 };
-
+//EMNL
+#if SUPPORTS_PRAGMA_PACK
+#pragma pack(pop)
+#endif
 
 class ENGINE_API USubActionCameraShake : public UMatSubAction
 {

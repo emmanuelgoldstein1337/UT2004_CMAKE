@@ -12,7 +12,7 @@
 
 // This sucks, but I really don't want the code to read the CD key to be
 // in a DLL export.  So we have to declare the registry stuff we need here.
-
+/*
 #define POINTER_64 __ptr64
 
 #if _MSC_VER && !_XBOX
@@ -20,12 +20,13 @@
 #include <windows.h>
 #pragma pack(pop)
 #endif
+*/
 #include "EnginePrivate.h"
 
 /*-----------------------------------------------------------------------------
 	Win32 Registry access
 -----------------------------------------------------------------------------*/
-
+/*
 #if _MSC_VER && !_XBOX
 #define RegOpenKeyX(a,b,c)				TCHAR_CALL_OS(RegOpenKeyW(a,b,c),RegOpenKeyA(a,TCHAR_TO_ANSI(b),c))
 static inline LONG RegQueryValueExX( HKEY hKey, LPCTSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData )
@@ -46,11 +47,11 @@ static inline LONG RegQueryValueExX( HKEY hKey, LPCTSTR lpValueName, LPDWORD lpR
 	}
 }
 #endif
-
+*/
 /*-----------------------------------------------------------------------------
 	GetRealCDKey
 -----------------------------------------------------------------------------*/
-
+/*
 static FString GetRealCDKey()
 {
 	static FString cdkey;
@@ -171,11 +172,11 @@ static FString GetRealCDKey()
 
 	return cdkey;
 }
-
+*/
 /*-----------------------------------------------------------------------------
 	Internal MD5 processing
 -----------------------------------------------------------------------------*/
-
+/*
 static FString GetDigestString( BYTE* Digest )
 {
 	FString MD5;
@@ -206,10 +207,11 @@ static INT HexDigit( TCHAR c )
 	else
 		return 0;
 }
-
+*/
 /*-----------------------------------------------------------------------------
 	Global CD Key functions
 -----------------------------------------------------------------------------*/
+/*
 #define TEST_CDKEY_VALIDATION_AND_TERMINATE 0
 
 UBOOL ENGINE_API ValidateCDKey()
@@ -291,7 +293,8 @@ FString ENGINE_API MangleKey(FString KeyHash, FString Key)
 	EncHash+= FString::Printf(TEXT("%08x"),InitialCRC);
 	return EncHash;
 }
-
+*/
+/*
 FString ENGINE_API UnmangleKey(FString KeyHash, FString Key)
 {
 	guard(Engine::UnmangleKey);
@@ -380,9 +383,56 @@ FString ENGINE_API DecryptWithCDKeyHash( const TCHAR* String, const TCHAR* HashA
 }
 
 
-
+*/
 
 /*-----------------------------------------------------------------------------
 	The End.
 -----------------------------------------------------------------------------*/
 
+
+/*-----------------------------------------------------------------------------
+	Global CD Key functions
+-----------------------------------------------------------------------------*/
+
+UBOOL ENGINE_API ValidateCDKey()
+{
+	return 1;
+}
+
+FString ENGINE_API GetCDKeyHash()
+{
+	return "NULL";
+}
+
+FString ENGINE_API MangleKey(FString KeyHash, FString Key)
+{
+	return "NULL";
+}
+
+FString ENGINE_API UnmangleKey(FString KeyHash, FString Key)
+{
+	return "NULL";
+}
+
+
+FString ENGINE_API GetCDKeyResponse(const TCHAR* Challenge)
+{
+	return "NULL";
+}
+
+FString ENGINE_API EncryptWithCDKeyHash(const TCHAR* String, const TCHAR* HashAppend)
+{
+	return "NULL";
+}
+
+FString ENGINE_API DecryptWithCDKeyHash(const TCHAR* String, const TCHAR* HashAppend, const TCHAR* InCDKey)
+{
+	return "NULL";
+}
+
+
+
+
+/*-----------------------------------------------------------------------------
+	The End.
+-----------------------------------------------------------------------------*/

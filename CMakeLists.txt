@@ -23,6 +23,7 @@ else()
     # additional warnings
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
+set(UE_COMP_OPTIONS /Zc:wchar_t- /EHsc /std:c++14 /STACK:10485760,4096)#/Zp4 What???
 
 add_compile_definitions(
     ZLIB_DLL
@@ -41,12 +42,12 @@ add_compile_definitions(
     DO_STAT_SLOW=0
     DO_CLOCK=0
     DO_CLOCK_SLOW=0
-    ASM=1
+    ASM=0
     ASM3DNOW=0
     RESTRICTEXPORT=0
     NO_KARMA=1
     FORCE_EXTREME_PACKING=0
-    WINDOWS_IGNORE_PACKING_MISMATCH=0
+    WINDOWS_IGNORE_PACKING_MISMATCH=1
 )
 
 
@@ -60,6 +61,13 @@ set(OGG_INCLUDE_DIR Ogg::ogg)
 add_subdirectory(Vorbis/vorbis)
 add_subdirectory(Vorbis/speex)
 add_subdirectory(zlib)
+set(SDL_SHARED ON)
+set(SDL_STATIC OFF)
+set(SDL_TEST_LIBRARY OFF)
+set(SDL_TESTS OFF)
+set(SDL_DISABLE_INSTALL ON)
+set(SDL_DISABLE_INSTALL_DOCS ON)
+
 add_subdirectory(SDL)
 
 file(GLOB_RECURSE CORE_SRC ${PROJECT_SOURCE_DIR}/Core/Src/*.cpp ${PROJECT_SOURCE_DIR}/Core/Inc/*.h)
@@ -69,6 +77,7 @@ target_compile_definitions(Core PRIVATE CORE_API=DLL_EXPORT)
 #set_target_properties(Core PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(Core PRIVATE System_Archive/ogg System_Archive/vorbis System_Archive/vorbisfile winmm)
 target_include_directories(Core PRIVATE Vorbis/ogg/include Vorbis/vorbis/include Core/Inc)
+target_compile_options(Core PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE ENGINE_SRC ${PROJECT_SOURCE_DIR}/Engine/Src/*.cpp ${PROJECT_SOURCE_DIR}/Engine/Inc/*.h)
 add_library(Engine SHARED ${ENGINE_SRC})
@@ -76,12 +85,14 @@ add_dependencies(Engine Core)
 target_compile_definitions(Engine PRIVATE ENGINE_API=DLL_EXPORT)
 target_link_libraries(Engine PRIVATE System_Archive/Core)
 target_include_directories(Engine PRIVATE Metoolkit/include Engine/Inc Core/Inc IFC/Inc)
+target_compile_options(Engine PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE FIRE_SRC ${PROJECT_SOURCE_DIR}/Fire/Src/*.cpp ${PROJECT_SOURCE_DIR}/Fire/Inc/*.h)
 add_library(Fire SHARED ${FIRE_SRC})
 add_dependencies(Fire Engine Core)
 target_link_libraries(Fire PUBLIC System_Archive/Core System_Archive/Engine)
 target_include_directories(Fire PUBLIC Engine/Inc Core/Inc Fire/Inc)
+#target_compile_options(Fire PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE XGAME_SRC ${PROJECT_SOURCE_DIR}/XGame/Src/*.cpp ${PROJECT_SOURCE_DIR}/XGame/Inc/*.h)
 add_library(XGame SHARED ${XGAME_SRC})
@@ -89,6 +100,7 @@ add_dependencies(XGame Engine Core)
 target_compile_definitions(XGame PRIVATE XGAME_API=DLL_EXPORT)
 target_link_libraries(XGame PUBLIC System_Archive/Core System_Archive/Engine)
 target_include_directories(XGame PUBLIC Engine/Inc Core/Inc XGame/Inc)
+#target_compile_options(XGame PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE EDITOR_SRC ${PROJECT_SOURCE_DIR}/Editor/Src/*.cpp ${PROJECT_SOURCE_DIR}/Editor/Inc/*.h)
 add_library(Editor SHARED ${EDITOR_SRC})
@@ -96,6 +108,7 @@ add_dependencies(Editor Engine Core)
 target_compile_definitions(Editor PRIVATE EDITOR_API=DLL_EXPORT)
 target_link_libraries(Editor PUBLIC System_Archive/Core System_Archive/Engine)
 target_include_directories(Editor PUBLIC Engine/Inc Core/Inc Window/Inc Metoolkit/include Editor/Inc)
+#target_compile_options(Editor PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE IPDRV_SRC ${PROJECT_SOURCE_DIR}/IpDrv/Src/*.cpp ${PROJECT_SOURCE_DIR}/IpDrv/Inc/*.h)
 add_library(IpDrv SHARED ${IPDRV_SRC})
@@ -103,6 +116,7 @@ add_dependencies(IpDrv Engine Core)
 target_compile_definitions(IpDrv PRIVATE IPDRV_API=DLL_EXPORT)
 target_link_libraries(IpDrv PUBLIC System_Archive/Core System_Archive/Engine PRIVATE wsock32)
 target_include_directories(IpDrv PUBLIC Engine/Inc Core/Inc IpDrv/Inc)
+#target_compile_options(IpDrv PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE ALAUDIO_SRC ${PROJECT_SOURCE_DIR}/ALAudio/Src/*.cpp ${PROJECT_SOURCE_DIR}/ALAudio/Inc/*.h)
 add_library(ALAudio SHARED ${ALAUDIO_SRC})
@@ -114,6 +128,7 @@ target_link_libraries(ALAudio PUBLIC System_Archive/Core System_Archive/Engine
     System_Archive/libspeex
     PRIVATE DxGuid dsound odbc32 odbccp32)
 target_include_directories(ALAudio PUBLIC Engine/Inc Core/Inc ALAudio/Inc OpenAL/Inc Vorbis/vorbis/include Vorbis/ogg/include)
+#target_compile_options(ALAudio PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE WINDOW_SRC ${PROJECT_SOURCE_DIR}/Window/Src/*.cpp ${PROJECT_SOURCE_DIR}/Window/Inc/*.h)
 add_library(Window SHARED ${WINDOW_SRC})
@@ -121,12 +136,14 @@ add_dependencies(Window Engine Core)
 target_compile_definitions(Window PRIVATE WINDOW_API=DLL_EXPORT)
 target_link_libraries(Window PUBLIC System_Archive/Core System_Archive/Engine PRIVATE comctl32)
 target_include_directories(Window PUBLIC Engine/Inc Core/Inc Window/Inc)
+#target_compile_options(Window PRIVATE ${UE_COMP_OPTIONS})
 
 add_library(UWeb SHARED UWeb/Src/UWeb.cpp UWeb/Src/UWebNative.cpp UWeb/Src/WebServer.cpp)
 add_dependencies(UWeb Engine Core)
 target_compile_definitions(UWeb PRIVATE UWEB_API=DLL_EXPORT)
 target_link_libraries(UWeb PUBLIC System_Archive/Core System_Archive/Engine)
 target_include_directories(UWeb PUBLIC Engine/Inc Core/Inc UWeb/Inc)
+#target_compile_options(UWeb PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE XINTERFACE_SRC ${PROJECT_SOURCE_DIR}/XInterface/Src/*.cpp ${PROJECT_SOURCE_DIR}/XInterface/Inc/*.h)
 add_library(XInterface SHARED ${XINTERFACE_SRC})
@@ -137,6 +154,7 @@ target_link_libraries(XInterface PUBLIC System_Archive/Core System_Archive/Engin
 target_include_directories(XInterface PUBLIC
     Engine/Inc Core/Inc Window/Inc
     XInterface/Inc XGame/Inc Metoolkit/include IpDrv/Inc)
+#target_compile_options(XInterface PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE WINDRV_SRC ${PROJECT_SOURCE_DIR}/WinDrv/Src/*.cpp ${PROJECT_SOURCE_DIR}/WinDrv/Inc/*.h)
 add_library(WinDrv SHARED ${WINDRV_SRC})
@@ -145,6 +163,7 @@ target_compile_definitions(WinDrv PRIVATE WINDRV_API=DLL_EXPORT)
 target_link_libraries(WinDrv PUBLIC System_Archive/Core System_Archive/Engine System_Archive/Window PRIVATE imm32 dinput8 dxguid)#dxerr8
 target_include_directories(WinDrv PUBLIC Engine/Inc Core/Inc Window/Inc WinDrv/Inc
     ALegacy/DirectX8/Inc Metoolkit/include)
+#target_compile_options(WinDrv PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE SDLDRV_SRC ${PROJECT_SOURCE_DIR}/SDLDrv/Src/*.cpp ${PROJECT_SOURCE_DIR}/SDLDrv/Inc/*.h)
 add_library(SDLDrv SHARED ${SDLDRV_SRC})
@@ -152,19 +171,22 @@ add_dependencies(SDLDrv Window Engine Core)
 target_compile_definitions(SDLDrv PRIVATE SDLDRV_API=DLL_EXPORT)
 target_link_libraries(SDLDrv PUBLIC System_Archive/Core System_Archive/Engine System_Archive/Window PRIVATE SDL3::SDL3)#dxerr8
 target_include_directories(SDLDrv PUBLIC Engine/Inc Core/Inc Window/Inc SDLDrv/Inc PRIVATE ${SDL_INCLUDES})
+#target_compile_options(SDLDrv PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE UTV2004_SRC ${PROJECT_SOURCE_DIR}/UTV2004/Src/*.cpp ${PROJECT_SOURCE_DIR}/UTV2004/Inc/*.h)
 add_library(UTV2004 SHARED ${UTV2004_SRC})
 add_dependencies(UTV2004 Engine Core IpDrv)
 target_link_libraries(UTV2004 PUBLIC System_Archive/Core System_Archive/Engine System_Archive/IpDrv PRIVATE wsock32)
 target_include_directories(UTV2004 PUBLIC Engine/Inc Core/Inc IpDrv/Inc UTV2004/Inc)
+#target_compile_options(UTV2004 PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE OPENGLDRV_SRC ${PROJECT_SOURCE_DIR}/OpenGLDrv/Src/*.cpp ${PROJECT_SOURCE_DIR}/OpenGLDrv/Inc/*.h)
 add_library(OpenGLDrv SHARED ${OPENGLDRV_SRC})
 add_dependencies(OpenGLDrv Engine Core)
 target_compile_definitions(OpenGLDrv PRIVATE OPENGLDRV_API=DLL_EXPORT _USRDLL OPENGLDRV_EXPORTS)
-target_link_libraries(OpenGLDrv PUBLIC System_Archive/Core System_Archive/Engine)
-target_include_directories(OpenGLDrv PUBLIC Engine/Inc Core/Inc OpenGLDrv/Inc)
+target_link_libraries(OpenGLDrv PUBLIC System_Archive/Core System_Archive/Engine PRIVATE SDL3::SDL3)
+target_include_directories(OpenGLDrv PUBLIC Engine/Inc Core/Inc OpenGLDrv/Inc PRIVATE ${SDL_INCLUDES})
+#target_compile_options(OpenGLDrv PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE ONSLAUGHT_SRC ${PROJECT_SOURCE_DIR}/Onslaught/Src/*.cpp ${PROJECT_SOURCE_DIR}/Onslaught/Inc/*.h)
 add_library(Onslaught SHARED ${ONSLAUGHT_SRC})
@@ -172,12 +194,14 @@ add_dependencies(Onslaught Engine Core XGame IpDrv)
 target_compile_definitions(Onslaught PRIVATE ONSLAUGHT_API=DLL_EXPORT)
 target_link_libraries(Onslaught PUBLIC System_Archive/Core System_Archive/Engine System_Archive/XGame System_Archive/IpDrv)
 target_include_directories(Onslaught PUBLIC Engine/Inc Core/Inc XGame/Inc IpDrv/Inc Onslaught/Inc)
+#target_compile_options(Onslaught PRIVATE ${UE_COMP_OPTIONS})
 
 add_library(GUIDesigner SHARED GUIDesigner/Src/GUIDesign.cpp)
 add_dependencies(GUIDesigner Engine Core XGame IpDrv Window XInterface)
 target_compile_definitions(GUIDesigner PRIVATE GUIDESIGNER_API=DLL_EXPORT)
 target_link_libraries(GUIDesigner PUBLIC System_Archive/Core System_Archive/Engine System_Archive/XGame System_Archive/XInterface System_Archive/IpDrv System_Archive/Window)
 target_include_directories(GUIDesigner PUBLIC Engine/Inc Core/Inc XGame/Inc IpDrv/Inc Window/Inc UnrealEd/Inc XInterface/Inc GUIDesigner/Inc)
+#target_compile_options(GUIDesigner PRIVATE ${UE_COMP_OPTIONS})
 
 #file(GLOB_RECURSE D3DDRV_SRC ${PROJECT_SOURCE_DIR}/D3DDrv/Src/*.cpp ${PROJECT_SOURCE_DIR}/D3DDrv/Src/*.h)
 #add_library(D3DDrv SHARED ${D3DDRV_SRC})
