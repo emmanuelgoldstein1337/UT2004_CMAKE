@@ -23,7 +23,8 @@ else()
     # additional warnings
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
-set(UE_COMP_OPTIONS /Zc:wchar_t- /EHsc /std:c++14 /STACK:10485760,4096)#/Zp4 What???
+set(UE_COMP_OPTIONS /Zc:wchar_t- /EHsc /std:c++14)#/Zp4 What???
+set(UE_LINK_OPTIONS /STACK:16777216,8192)#/STACK:16777216,8192
 
 add_compile_definitions(
     ZLIB_DLL
@@ -232,7 +233,7 @@ target_include_directories(Setup PUBLIC Core/Inc Window/Inc Setup/Inc ALegacy/Di
 
 add_executable(UT2004_Game Launch/Src/Launch.cpp Launch/Src/Helper.cpp)
 add_dependencies(UT2004_Game Core Engine Window zlib)
-target_link_options(UT2004_Game PRIVATE "/SUBSYSTEM:WINDOWS")
+target_link_options(UT2004_Game PRIVATE "/SUBSYSTEM:WINDOWS" ${UE_LINK_OPTIONS})
 target_link_libraries(UT2004_Game PUBLIC System_Archive/Core System_Archive/Engine System_Archive/Window System_Archive/zlib PRIVATE Comdlg32 Dbghelp DxGuid ddraw wbemuuid comsupp)
 target_include_directories(UT2004_Game PUBLIC Core/Inc Engine/Inc Window/Inc)
 

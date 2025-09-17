@@ -2288,26 +2288,6 @@ ULevel* UGameEngine::LoadMap( const FURL& URL, UPendingLevel* Pending, const TMa
 	guard(VerifyClasses);
 	UBOOL Mismatch = false;
 
-		VERIFY_CLASS_SIZE_NODIE(ASceneManager)
-		VERIFY_CLASS_SIZE_NODIE(UProjectorMaterial)
-		VERIFY_CLASS_SIZE_NODIE(AProjector)
-		VERIFY_CLASS_SIZE_NODIE(UPlayInfo)
-		VERIFY_CLASS_SIZE_NODIE(UPlayer)
-		VERIFY_CLASS_SIZE_NODIE(UParticleMaterial)
-
-
-	VERIFY_CLASS_SIZE_NODIE(USound);
-	int bullshit = USound::StaticClass()->GetPropertiesSize(); //184
-	int crap = sizeof(USound); //200
-
-	int LLZ = sizeof(FLazyLoader);
-	int LAZ = sizeof(TLazyArray<BYTE>);
-	int FSDZ = sizeof(FSoundData);
-
-	crap = sizeof(USound); //200
-
-
-
 	#define VERIFY_CLASS_SIZES
 	#define NAMES_ONLY
 	#define AUTOGENERATE_NAME(name)
