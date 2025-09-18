@@ -1,5 +1,7 @@
 #include "EnginePrivate.h"
 
+#ifdef ME_HEADERS
+
 #include <MeMath.h>
 #include <McdBox.h>
 
@@ -16,7 +18,9 @@
 #include <McdPrimitives.h>
 //#include "vectormath.h"
 //#include <GeomUtils.h>
-
+#else
+#include "EM_ME_Define.h"
+#endif // ME_HEADERS
 //  Vec x Axis
 inline void MeVec3CrossAxis(MeVector3 outVec, const MeVector3 inVec, const INT inAxisN) 
 {
@@ -554,6 +558,7 @@ static bool McdVanillaOverlapOBBTri_13(MeReal &outSep,
 * Box to Tri List collision detection
 */
 
+#ifndef STUB_KARMA_FUNCS
 MeBool KBoxTriangleListIntersect( McdModelPair* p, McdIntersectResult *result ) 
 {
 	guard(KBoxTriangleListIntersect);
@@ -679,6 +684,8 @@ MeBool KBoxTriangleListIntersect( McdModelPair* p, McdIntersectResult *result )
 		result->touch = 0;   
 
 	return result->touch;
-
-	unguard;
+	
 }
+#else
+	MeBool KBoxTriangleListIntersect(McdModelPair* p, McdIntersectResult* result) { return 0; }
+#endif
