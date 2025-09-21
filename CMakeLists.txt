@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.15)
 
 project(UT2004 VERSION 3369.0 DESCRIPTION "Unreal Tournament 2004" LANGUAGES CXX C)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 #SET(LIBZ_LIB optimized ${PROJECT_SOURCE_DIR}/zlib.lib debug ${PROJECT_SOURCE_DIR}/zlib.lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/System_Archive)#Move it to another location
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/System_Archive)
@@ -15,20 +19,19 @@ endif()
 option(PHYSICS_WRAPPER "Replase KARMA Physics engine" OFF)
 if (PHYSICS_WRAPPER)	
 	add_compile_definitions(WITH_PHYS_WRAP)
-    set(ODE_WITH_DEMOS OFF)
-    set(ODE_WITH_TESTS OFF)
-    add_subdirectory(ODE)
+    set(BUILD_SHARED_LIBS ON)
+    add_subdirectory(JoltPhysics/Build)
 endif()
 
 #set(CMAKE_CXX_FLAGS "/Zc:wchar_t")
 
 if (MSVC)#/Zp4
-    add_compile_options(/Zc:wchar_t- /EHsc /std:c++14)
+    add_compile_options(/Zc:wchar_t- /EHsc) # /std:c++17
 else()
     # additional warnings
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
-set(UE_COMP_OPTIONS /Zc:wchar_t- /EHsc /std:c++14)#/Zp4 What???
+set(UE_COMP_OPTIONS /Zc:wchar_t- /EHsc)#/Zp4 What??? /std:c++14
 set(UE_LINK_OPTIONS /STACK:16777216,8192)#/STACK:16777216,8192
 
 add_compile_definitions(
@@ -91,8 +94,8 @@ file(GLOB_RECURSE ENGINE_SRC ${PROJECT_SOURCE_DIR}/Engine/Src/*.cpp ${PROJECT_SO
 add_library(Engine SHARED ${ENGINE_SRC})
 add_dependencies(Engine Core)
 target_compile_definitions(Engine PRIVATE ENGINE_API=DLL_EXPORT)
-target_link_libraries(Engine PRIVATE System_Archive/Core)
-target_include_directories(Engine PUBLIC Engine/Inc Core/Inc IFC/Inc)
+target_link_libraries(Engine PRIVATE System_Archive/Core PRIVATE Jolt::Jolt)
+target_include_directories(Engine PUBLIC Engine/Inc Core/Inc IFC/Inc PRIVATE ${JoltPhysics_SOURCE_DIR}/..)
 target_compile_options(Engine PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE FIRE_SRC ${PROJECT_SOURCE_DIR}/Fire/Src/*.cpp ${PROJECT_SOURCE_DIR}/Fire/Inc/*.h)

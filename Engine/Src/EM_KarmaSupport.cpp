@@ -7,11 +7,18 @@
 
 #include "EnginePrivate.h"
 
+#include "EM_Jolt.h"
+
+
+
 #ifdef WITH_PHYS_WRAP
 
 void MEAPI KInitLevelKarma(ULevel* level)
 {
     guard(KInitLevelKarma);
+    
+    EM_Jolt::Init();
+
     unguard;
 }
 
