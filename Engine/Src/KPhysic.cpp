@@ -68,6 +68,7 @@ void AKActor::Spawned()
 
 #ifndef WITH_KARMA
 
+#ifndef WITH_PHYS_WRAP
 void UKarmaParamsCollision::execCalcContactRegion( FFrame& Stack, RESULT_DECL )
 {
 	guard(UKarmaParamsCollision::execCalcContactRegion);
@@ -78,6 +79,7 @@ void UKarmaParamsCollision::execCalcContactRegion( FFrame& Stack, RESULT_DECL )
 
 	unguard;
 }
+#endif // WITH_PHYS_WRAP
 
 #else
 

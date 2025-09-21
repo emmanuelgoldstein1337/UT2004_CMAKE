@@ -2630,7 +2630,7 @@ ULevel* UGameEngine::LoadMap( const FURL& URL, UPendingLevel* Pending, const TMa
 		Info->bStartup = 1;
 		Info->TimeDilation = ((ALevelInfo *)(Info->GetClass()->GetDefaultActor()))->TimeDilation;
 
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
 		if(!GIsEditor && !GLevel->GetLevelInfo()->bKNoInit)
 		{
 			KInitLevelKarma(GLevel);

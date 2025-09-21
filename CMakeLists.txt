@@ -12,8 +12,13 @@ else()
    	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/System)
 endif()
 
-option(BUILD_CORE "Enable building Core" ON)
-option(BUILD_CORE "Enable building Engine" ON)
+option(PHYSICS_WRAPPER "Replase KARMA Physics engine" OFF)
+if (PHYSICS_WRAPPER)	
+	add_compile_definitions(WITH_PHYS_WRAP)
+    set(ODE_WITH_DEMOS OFF)
+    set(ODE_WITH_TESTS OFF)
+    add_subdirectory(ODE)
+endif()
 
 #set(CMAKE_CXX_FLAGS "/Zc:wchar_t")
 
@@ -64,13 +69,13 @@ set(OGG_INCLUDE_DIR Ogg::ogg)
 add_subdirectory(Vorbis/vorbis)
 add_subdirectory(Vorbis/speex)
 add_subdirectory(zlib)
+
 set(SDL_SHARED ON)
 set(SDL_STATIC OFF)
 set(SDL_TEST_LIBRARY OFF)
 set(SDL_TESTS OFF)
 set(SDL_DISABLE_INSTALL ON)
 set(SDL_DISABLE_INSTALL_DOCS ON)
-
 add_subdirectory(SDL)
 
 file(GLOB_RECURSE CORE_SRC ${PROJECT_SOURCE_DIR}/Core/Src/*.cpp ${PROJECT_SOURCE_DIR}/Core/Inc/*.h)
@@ -87,7 +92,7 @@ add_library(Engine SHARED ${ENGINE_SRC})
 add_dependencies(Engine Core)
 target_compile_definitions(Engine PRIVATE ENGINE_API=DLL_EXPORT)
 target_link_libraries(Engine PRIVATE System_Archive/Core)
-target_include_directories(Engine PRIVATE Metoolkit/include Engine/Inc Core/Inc IFC/Inc)
+target_include_directories(Engine PUBLIC Engine/Inc Core/Inc IFC/Inc)
 target_compile_options(Engine PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE FIRE_SRC ${PROJECT_SOURCE_DIR}/Fire/Src/*.cpp ${PROJECT_SOURCE_DIR}/Fire/Inc/*.h)
@@ -110,7 +115,7 @@ add_library(Editor SHARED ${EDITOR_SRC})
 add_dependencies(Editor Engine Core)
 target_compile_definitions(Editor PRIVATE EDITOR_API=DLL_EXPORT)
 target_link_libraries(Editor PUBLIC System_Archive/Core System_Archive/Engine)
-target_include_directories(Editor PUBLIC Engine/Inc Core/Inc Window/Inc Metoolkit/include Editor/Inc)
+target_include_directories(Editor PUBLIC Engine/Inc Core/Inc Window/Inc Editor/Inc)
 #target_compile_options(Editor PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE IPDRV_SRC ${PROJECT_SOURCE_DIR}/IpDrv/Src/*.cpp ${PROJECT_SOURCE_DIR}/IpDrv/Inc/*.h)
@@ -156,7 +161,7 @@ target_link_libraries(XInterface PUBLIC System_Archive/Core System_Archive/Engin
     System_Archive/IpDrv System_Archive/Window System_Archive/XGame)
 target_include_directories(XInterface PUBLIC
     Engine/Inc Core/Inc Window/Inc
-    XInterface/Inc XGame/Inc Metoolkit/include IpDrv/Inc)
+    XInterface/Inc XGame/Inc IpDrv/Inc)
 #target_compile_options(XInterface PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE WINDRV_SRC ${PROJECT_SOURCE_DIR}/WinDrv/Src/*.cpp ${PROJECT_SOURCE_DIR}/WinDrv/Inc/*.h)
@@ -165,7 +170,7 @@ add_dependencies(WinDrv Window Engine Core)
 target_compile_definitions(WinDrv PRIVATE WINDRV_API=DLL_EXPORT)
 target_link_libraries(WinDrv PUBLIC System_Archive/Core System_Archive/Engine System_Archive/Window PRIVATE imm32 dinput8 dxguid)#dxerr8
 target_include_directories(WinDrv PUBLIC Engine/Inc Core/Inc Window/Inc WinDrv/Inc
-    ALegacy/DirectX8/Inc Metoolkit/include)
+    ALegacy/DirectX8/Inc)
 #target_compile_options(WinDrv PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE SDLDRV_SRC ${PROJECT_SOURCE_DIR}/SDLDrv/Src/*.cpp ${PROJECT_SOURCE_DIR}/SDLDrv/Inc/*.h)
@@ -223,7 +228,7 @@ add_executable(UCC UCC/Src/UCC.cpp)
 add_dependencies(UCC Core Engine zlib)
 target_compile_definitions(UCC PRIVATE _CONSOLE)
 target_link_libraries(UCC PUBLIC System_Archive/Core System_Archive/zlib)
-target_include_directories(UCC PUBLIC Core/Inc Engine/Inc Metoolkit/include)
+target_include_directories(UCC PUBLIC Core/Inc Engine/Inc)
 
 file(GLOB_RECURSE SETUP_SRC ${PROJECT_SOURCE_DIR}/Setup/Src/*.cpp ${PROJECT_SOURCE_DIR}/Setup/Inc/*.h)
 add_executable(Setup ${SETUP_SRC})
@@ -244,4 +249,4 @@ target_include_directories(UT2004_Game PUBLIC Core/Inc Engine/Inc Window/Inc)
 #target_link_options(UnrealEd PRIVATE "/SUBSYSTEM:WINDOWS")
 ##target_compile_definitions(UnrealEd PUBLIC UNREALED_API=DLL_EXPORT)
 #target_link_libraries(UnrealEd PUBLIC System_Archive/Core System_Archive/Engine System_Archive/Window System_Archive/Editor PRIVATE comctl32)
-#target_include_directories(UnrealEd PUBLIC Core/Inc Engine/Inc Window/Inc Editor/Inc Metoolkit/include UnrealEd/Inc UnrealEd/Src)
+#target_include_directories(UnrealEd PUBLIC Core/Inc Engine/Inc Window/Inc Editor/Inc UnrealEd/Inc UnrealEd/Src)

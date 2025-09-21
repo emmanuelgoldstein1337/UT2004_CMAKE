@@ -17,6 +17,10 @@
     #include "KarmaSupport.h"
 #endif
 
+#ifdef WITH_PHYS_WRAP
+#include "EM_KarmaSupport.h"
+#endif
+
 #ifdef WITH_LIPSINC
 	#include "LIPSincSupport.h"
 #endif

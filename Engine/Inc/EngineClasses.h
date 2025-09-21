@@ -4614,7 +4614,7 @@ public:
         ProcessEvent(FindFunctionChecked(ENGINE_VehicleStateReceived),NULL);
     }
     DECLARE_CLASS(ASVehicle,AVehicle,0|CLASS_Config,Engine)
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
 	// Actor interface.
 	virtual void PostBeginPlay();
 	virtual void Destroy();
@@ -4662,7 +4662,7 @@ public:
         ProcessEvent(FindFunctionChecked(ENGINE_VehicleStateReceived),NULL);
     }
     DECLARE_CLASS(AKVehicle,AVehicle,0|CLASS_Config,Engine)
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
 	virtual void PostNetReceive();
     virtual void PostEditChange();
 	virtual void setPhysics(BYTE NewPhysics, AActor *NewFloor, FVector NewFloorV);
@@ -7373,7 +7373,7 @@ public:
     FLOAT PenOffset;
     PTRINT KContact;
     DECLARE_CLASS(AKRepulsor,AActor,0,Engine)
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
 	void Destroy();
 #endif
 };
@@ -7416,7 +7416,7 @@ public:
     FKRigidBodyState ReceiveState GCC_PACK(4);
     BITFIELD bReceiveStateNew:1 GCC_PACK(4);
     DECLARE_CLASS(AKTire,AKActor,0,Engine)
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
 	// Actor interface.
 	virtual void preContactUpdate();
 #endif
@@ -7454,7 +7454,7 @@ public:
         ProcessEvent(FindFunctionChecked(ENGINE_KForceExceed),&Parms);
     }
     DECLARE_CLASS(AKConstraint,AKActor,0,Engine)
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
     virtual MdtConstraintID getKConstraint() const;
     virtual McdModelID getKModel() const;
 
@@ -7493,7 +7493,7 @@ public:
     FLOAT KSuspRef;
     FLOAT KWheelHeight;
     DECLARE_CLASS(AKCarWheelJoint,AKConstraint,0,Engine)
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
     virtual void KUpdateConstraintParams();
 	virtual void preKarmaStep(FLOAT DeltaTime);
 #endif
@@ -7507,7 +7507,7 @@ public:
     FLOAT KStiffness;
     FLOAT KDamping;
     DECLARE_CLASS(AKConeLimit,AKConstraint,0,Engine)
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
     virtual void KUpdateConstraintParams();
 #endif
 };
@@ -7535,7 +7535,7 @@ public:
     BITFIELD KUseAltDesired:1 GCC_PACK(4);
     FLOAT KCurrentAngle GCC_PACK(4);
     DECLARE_CLASS(AKHinge,AKConstraint,0,Engine)
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
     virtual void KUpdateConstraintParams();
 	virtual void preKarmaStep(FLOAT DeltaTime);
 #endif

@@ -110,6 +110,7 @@ extern "C"
 #endif
 	typedef void * McdModelID;
     typedef void * McdGeometryID;
+    typedef void * MdtConstraintID;
     typedef McdGeometryID McdTriangleListID;
     MeINLINE int MEAPI NextMod3(const int i) { return (1 << i) & 3; }
     MeINLINE void MEAPI MeVector3Copy(MeVector3 c, const MeVector3 b) { c[0] = b[0]; c[1] = b[1]; c[2] = b[2]; }

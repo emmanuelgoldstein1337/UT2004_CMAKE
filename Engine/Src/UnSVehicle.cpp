@@ -9,7 +9,7 @@ void ASVehicle::execUpdateVehicle( FFrame& Stack, RESULT_DECL )
 	
 	P_GET_FLOAT(DeltaTime);
 	P_FINISH;
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
 	UpdateVehicle(DeltaTime);
 #endif
 	unguard;
