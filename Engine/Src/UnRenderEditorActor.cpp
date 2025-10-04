@@ -229,7 +229,7 @@ void AActor::RenderEditorSelected(FLevelSceneNode* SceneNode,FRenderInterface* R
 	unguard;
 }
 
-#if defined WITH_KARMA || defined WITH_PHYS_WRAP
+#ifdef WITH_KARMA
 void AKConstraint::RenderEditorSelected(FLevelSceneNode* SceneNode,FRenderInterface* RI, FDynamicActor* FDA)
 {
 	guard(AKConstraint::RenderEditorSelected);

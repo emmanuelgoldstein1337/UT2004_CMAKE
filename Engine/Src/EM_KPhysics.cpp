@@ -1,3 +1,5 @@
+#include "ode/ode.h"
+
 #include "EnginePrivate.h"
 
 #ifdef WITH_PHYS_WRAP
@@ -14,11 +16,57 @@ void UKarmaParamsCollision::execCalcContactRegion(FFrame& Stack, RESULT_DECL)
 }
 
 // Returns actors model (or NULL if it has none, or is a constraint.
-McdModelID AActor::getKModel() const
+void * AActor::getKModel() const
 {
-	return 0;
+	if (!this->KParams)
+		return 0;
+
+	return ((void *)this->KParams->KarmaData);
 }
 
+void AActor::physKarma(FLOAT deltaTime)
+{
+	guard(AActor::physKarma);
+	clock(GStats.DWORDStats(GEngineStats.STATS_Karma_physKarma));
+
+	check(Physics == PHYS_Karma);
+
+	FRotator rot;
+	FVector newPos, moveBy;
+	FCheckResult Hit(1.0f);
+
+	dWorldID world = (dWorldID)this->GetLevel()->KWorld;
+	dBodyID model = (dBodyID)this->KParams->KarmaData;
+
+
+	// Handle any updates to the rigid body state from script.
+	// Note: Because actors are always ticked before constraints, we can be sure the constraint will
+	// get the most up-to-date state.
+	FKRigidBodyState newState;
+	eventKUpdateState(newState);
+
+	const dReal * CPos = dBodyGetPosition(model);
+	const dReal * CRot = dBodyGetRotation(model); // 0,2, 3?, 5, 7?,8 10, 11; // 0 5 10
+	
+	//const dReal* CRot = dGeomGetRotation(cylgeom);
+
+	//newState.AngVel.X = CPos[0];
+	//newState.AngVel.Y = CPos[1];
+	//newState.AngVel.Z = CPos[0];
+	//this->Velocity = FVector(CPos[0], CPos[1], CPos[2]);
+	//this->Location = FVector(CPos[0], CPos[1], CPos[2]);
+	//this->Rotation = FRotator(2000, 222, 2);
+	//this->UpdateRenderData(); //no need this
+	ULevel* level = GetLevel();
+	//level->MoveActor(this, {static_cast<float>(CPos[0]), static_cast<float>(CPos[1]), static_cast<float>(CPos[2])} , FRotator(0, 0, 0), Hit); //PostKarmaStep() //5 //6 //9
+	this->Location = { static_cast<float>(CPos[0]), static_cast<float>(CPos[1]), static_cast<float>(CPos[2]) };
+	this->Rotation = { static_cast<INT>(CRot[2] * -10430.2192), static_cast<INT>(CRot[4] * 10430.2192), static_cast<INT>(CRot[6] * 10430.2192) };// 65536 / 2pi const MeReal K_Rad2U = (MeReal)10430.2192; const MeReal K_U2Rad = (MeReal)0.000095875262;
+	this->ClearRenderData();
+	unclock(GStats.DWORDStats(GEngineStats.STATS_Karma_physKarma));
+	unguard;
+}
+
+/*
 void AActor::KWake()
 {
 	guard(AActor::KWake);
@@ -59,7 +107,7 @@ void AActor::postKarmaStep() // Called just after the actor has finished being s
 	guard(AActor::postKarmaStep);
 	unguard;
 }
-
+*/
 void AKRepulsor::Destroy() //533
 {
 	guard(AKRepulsor::Destroy);
@@ -75,6 +123,47 @@ void AKRepulsor::Destroy() //533
 	unguard;
 }
 
+UBOOL KShouldStopKarma(AActor* actor) //639
+{
+	guard(KShouldStopKarma);
+
+	check(actor);
+
+	if (actor->IsA(ATerrainInfo::StaticClass()) || actor->IsA(ALevelInfo::StaticClass()))
+		return true;
+
+	if (!actor->bBlockKarma)
+		return false;
+
+	// Do safetime against blocking volumes (but not if class specific blocker - it depends on the class type).
+	ABlockingVolume* BV = Cast<ABlockingVolume>(actor);
+	if (BV && !BV->bClassBlocker)
+		return true;
+
+	UPrimitive* prim = actor->GetPrimitive();
+	if (!prim)
+		return false;
+
+	UStaticMesh* statMesh = NULL;
+	USkeletalMesh* skelMesh = NULL;
+	if ((statMesh = Cast<UStaticMesh>(prim)) != NULL)
+	{
+		if (!statMesh->UseSimpleKarmaCollision)
+			return true; // Karma collision with graphics triangles
+
+		if (statMesh->UseSimpleKarmaCollision && statMesh->KPhysicsProps)
+			return true; // Karma collision with collision model.
+	}
+	else if ((skelMesh = Cast<USkeletalMesh>(prim)) != NULL)
+	{
+		if (skelMesh->KPhysicsProps)
+			return true;
+	}
+
+	return false;
+
+	unguard;
+}
 //////////// AKVEHICLE C++ ////////////////
 
 void AKVehicle::PostNetReceive() //1189

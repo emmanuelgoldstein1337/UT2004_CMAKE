@@ -1685,6 +1685,10 @@ void ULevel::Tick( ELevelTick TickType, FLOAT DeltaSeconds )
         KTickLevelKarma(this, DeltaSeconds);
 #endif
 
+#ifdef WITH_PHYS_WRAP
+		KTickLevelKarma(this, DeltaSeconds);
+#endif
+
 		for( INT iActor=iFirstDynamicActor; iActor<Actors.Num(); iActor++ )
 		{
 			if( Actors( iActor ) && !Actors(iActor)->bDeleteMe )

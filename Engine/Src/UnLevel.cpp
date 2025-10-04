@@ -489,6 +489,10 @@ void ULevel::Destroy()
     KTermLevelKarma(this);
 #endif
 
+#ifdef WITH_PHYS_WRAP
+	KTermLevelKarma(this);
+#endif
+
 #ifdef WITH_LIPSINC
 	GLIPSincShutdownLevel();
 #endif

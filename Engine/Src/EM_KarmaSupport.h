@@ -4,10 +4,26 @@
     Engine-internal Karma Integration Functions
 =============================================================================*/
 
-void    MEAPI KInitGameKarma();
+#ifdef WITH_PHYS_WRAP
 
+void    KInitGameKarma();
+void    ENGINE_API KTermGameKarma();
 
-void    MEAPI KInitLevelKarma(ULevel* level);
+void    KInitLevelKarma(ULevel* level);
+void    KTermLevelKarma(ULevel* level);
 
+void    KTickLevelKarma(ULevel* level, FLOAT DeltaSeconds);
 
-void    MEAPI KInitActorKarma(AActor* actor);
+void    KInitActorCollision(AActor* actor, UBOOL makeNull); //Maybe this is only for non dynamic objects
+void    KTermActorCollision(AActor* actor);
+
+void    KInitActorDynamics(AActor* actor); //Maybe this is for dynamic objects
+void    KTermActorDynamics(AActor* actor);
+
+void    KInitActorKarma(AActor* actor);
+void    KTermActorKarma(AActor* actor);
+
+// Asset DB
+UBOOL		  KShouldStopKarma(AActor* actor);
+
+#endif // WITH_PHYS_WRAP

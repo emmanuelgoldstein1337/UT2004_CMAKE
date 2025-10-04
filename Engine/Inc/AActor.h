@@ -240,7 +240,7 @@
 	virtual void stepUp(FVector GravDir, FVector DesiredDir, FVector Delta, FCheckResult &Hit);
 	virtual UBOOL ShrinkCollision(AActor *HitActor, const FVector &StartLocation);
     
-#if defined WITH_KARMA || defined WITH_PHYS_WRAP
+#ifdef WITH_KARMA
     virtual McdModelID getKModel() const;
     
 	void KWake();
@@ -267,6 +267,13 @@
 	virtual void preContactUpdate();
 	virtual UBOOL KRepulsorsShouldHit(AActor* Actor) { return true; }
 #endif
+
+#ifdef WITH_PHYS_WRAP
+	virtual void * getKModel() const;
+
+	virtual void physKarma(FLOAT DeltaTime);
+#endif // WITH_PHYS_WRAP
+
     
 	// AI functions.
 	virtual UBOOL ReachedBy(APawn * P, FVector Loc) { return false; }

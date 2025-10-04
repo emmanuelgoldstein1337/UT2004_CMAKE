@@ -221,8 +221,7 @@ void ASVehicle::TickAuthoritative( FLOAT DeltaSeconds )
 	if ( !bDeleteMe && Physics != PHYS_None )
 		performPhysics( DeltaSeconds );
 
-	if( KIsAwake() )
-		NetUpdateTime = Level->TimeSeconds - 1; // force quick net update
+	//if( KIsAwake() ) NetUpdateTime = Level->TimeSeconds - 1; // force quick net update
 
 	unguard;
 }
@@ -239,7 +238,7 @@ void ASVehicle::physKarma(FLOAT DeltaTime)
 {
 	guard(ASVehicle::PhysKarma);
 
-	Super::physKarma(DeltaTime);
+	//Super::physKarma(DeltaTime);
 
 	USkeletalMesh* smesh = Cast<USkeletalMesh>(Mesh);
 	if(!smesh)
@@ -315,8 +314,7 @@ void ASVehicle::physKarma(FLOAT DeltaTime)
 			bWheelsMoving = true;
 	}
 
-	if (bWheelsMoving)
-		KWake();
+	//if (bWheelsMoving) KWake();
 
 	unguard;
 }

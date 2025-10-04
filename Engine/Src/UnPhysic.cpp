@@ -289,6 +289,10 @@ void AActor::performPhysics(FLOAT DeltaSeconds)
         case PHYS_Karma: physKarma(DeltaSeconds); break;
         case PHYS_KarmaRagDoll: physKarmaRagDoll(DeltaSeconds); break;
 #endif
+
+#ifdef WITH_PHYS_WRAP
+		case PHYS_Karma: physKarma(DeltaSeconds); break;
+#endif
 	}
 
 	// rotate

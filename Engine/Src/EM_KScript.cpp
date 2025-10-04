@@ -7,7 +7,7 @@
 #include "EnginePrivate.h"
 
 #ifdef WITH_PHYS_WRAP
-
+/*
 void AActor::preContactUpdate()
 {
 	guard(AActor::preContactUpdate);
@@ -27,4 +27,5 @@ void AKTire::preContactUpdate() //234
 
 	unguard;
 }
+*/
 #endif // WITH_PHYS_WRAP

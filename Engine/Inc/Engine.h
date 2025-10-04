@@ -88,15 +88,6 @@ ENGINE_API extern class FTempLineBatcher*	GTempLineBatcher;
 	const MeReal K_U2Rad = (MeReal)0.000095875262;
 #endif
 
-#ifdef WITH_PHYS_WRAP
-#include <EM_ME_Define.h>
-#endif // WITH_PHYS_WRAP
-
-/*
-#if SUPPORTS_PRAGMA_PACK
-#pragma pack(push,4)
-#endif */
-
 #include "UnForcePacking_begin.h"
 
 // LIPSinc Includes

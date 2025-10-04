@@ -16,6 +16,12 @@ void AKHinge::preKarmaStep(FLOAT DeltaTime) //402
 	unguard;
 }
 
+// KConstraint (and below) use KarmaData for MdtConstriantID instead of McdModel
+void * AKConstraint::getKModel() const //499
+{
+	return NULL;
+}
+/*
 UBOOL AKConstraint::CheckOwnerUpdated() //431
 {
 	guardSlow(AKConstraint::CheckOwnerUpdated);
@@ -49,7 +55,7 @@ void AKConstraint::physKarma(FLOAT deltaTime) //460
 {
 }
 
-/* KConstraint (and below) use KarmaData for MdtConstriantID instead of McdModel */
+// KConstraint (and below) use KarmaData for MdtConstriantID instead of McdModel
 McdModelID AKConstraint::getKModel() const //499
 {
 	return NULL;
@@ -99,7 +105,7 @@ void AKConstraint::CheckForErrors() //590
 
 	unguard;
 }
-
+*/
 //////////////////////////////////////////////////////////
 ////// CONSTRAINT SPECIFIC KUPDATECONSTRAINTPARAMS ///////
 //////////////////////////////////////////////////////////

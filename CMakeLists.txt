@@ -20,7 +20,12 @@ option(PHYSICS_WRAPPER "Replase KARMA Physics engine" OFF)
 if (PHYSICS_WRAPPER)	
 	add_compile_definitions(WITH_PHYS_WRAP)
     set(BUILD_SHARED_LIBS ON)
-    add_subdirectory(JoltPhysics/Build)
+    set(ODE_WITH_DEMOS OFF)
+    add_subdirectory(ODE)
+
+    #set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    #set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+
 endif()
 
 #set(CMAKE_CXX_FLAGS "/Zc:wchar_t")
@@ -94,8 +99,8 @@ file(GLOB_RECURSE ENGINE_SRC ${PROJECT_SOURCE_DIR}/Engine/Src/*.cpp ${PROJECT_SO
 add_library(Engine SHARED ${ENGINE_SRC})
 add_dependencies(Engine Core)
 target_compile_definitions(Engine PRIVATE ENGINE_API=DLL_EXPORT)
-target_link_libraries(Engine PRIVATE System_Archive/Core PRIVATE Jolt::Jolt)
-target_include_directories(Engine PUBLIC Engine/Inc Core/Inc IFC/Inc PRIVATE ${JoltPhysics_SOURCE_DIR}/..)
+target_link_libraries(Engine PRIVATE System_Archive/Core ODE)
+target_include_directories(Engine PUBLIC Engine/Inc Core/Inc IFC/Inc ${ODE})
 target_compile_options(Engine PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE FIRE_SRC ${PROJECT_SOURCE_DIR}/Fire/Src/*.cpp ${PROJECT_SOURCE_DIR}/Fire/Inc/*.h)

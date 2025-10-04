@@ -170,7 +170,7 @@ void UGameEngine::Init()
 		GRenDev->Init();
 	}
     
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
     KInitGameKarma(); // Init Karma physics.
 #endif
 
@@ -377,6 +377,9 @@ void UGameEngine::Destroy()
     KTermGameKarma();
 #endif
 
+#ifdef WITH_PHYS_WRAP
+	KTermGameKarma();
+#endif // WITH_PHYS_WRAP
 #ifdef WITH_LIPSINC
 	GLIPSincShutdownGame();
 #endif
@@ -2229,7 +2232,7 @@ ULevel* UGameEngine::LoadMap( const FURL& URL, UPendingLevel* Pending, const TMa
 			SavePackage( GLevel->GetOuter(), GLevel, 0, Filename, GLog );
 		}
 
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
 		if(!GIsEditor) // dont need to do this in editor - no Karma runs.
 		{
 			// To save memory, we remove Karma from all actors before loading the new level.

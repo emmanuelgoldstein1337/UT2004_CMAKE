@@ -7416,7 +7416,7 @@ public:
     FKRigidBodyState ReceiveState GCC_PACK(4);
     BITFIELD bReceiveStateNew:1 GCC_PACK(4);
     DECLARE_CLASS(AKTire,AKActor,0,Engine)
-#if defined WITH_KARMA || defined WITH_PHYS_WRAP
+#ifdef WITH_KARMA
 	// Actor interface.
 	virtual void preContactUpdate();
 #endif
@@ -7454,7 +7454,7 @@ public:
         ProcessEvent(FindFunctionChecked(ENGINE_KForceExceed),&Parms);
     }
     DECLARE_CLASS(AKConstraint,AKActor,0,Engine)
-#if defined WITH_KARMA || defined WITH_PHYS_WRAP
+#ifdef WITH_KARMA
     virtual MdtConstraintID getKConstraint() const;
     virtual McdModelID getKModel() const;
 
@@ -7471,6 +7471,10 @@ public:
 
 	virtual void preKarmaStep(FLOAT DeltaTime) {};
 	virtual void postKarmaStep() {};
+#endif
+
+#ifdef WITH_PHYS_WRAP
+    void * getKModel() const;
 #endif
 };
 
