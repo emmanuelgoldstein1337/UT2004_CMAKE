@@ -1,8 +1,32 @@
-#include "ode/ode.h"
-
-#include "EnginePrivate.h"
+#include "EM_ODE.h"
 
 #ifdef WITH_PHYS_WRAP
+
+// Gets ODE rotation matrix and return rotation in Unreal units
+FRotator RotatorFromMatrix(const dReal* R)
+{
+	dReal pitch_1, pitch_2, roll_1, roll_2, yaw_1, yaw_2;
+	if (R[8] != 1.0 && R[8] != -1.0) {
+		pitch_1 = -1 * asin(R[8]);
+		pitch_2 = PI - pitch_1;
+		roll_1 = atan2(R[9] / cos(pitch_1), R[10] / cos(pitch_1));
+		roll_2 = atan2(R[9] / cos(pitch_2), R[10] / cos(pitch_2));
+		yaw_1 = atan2(R[4] / cos(pitch_1), R[0] / cos(pitch_1));
+		yaw_2 = atan2(R[4] / cos(pitch_2), R[0] / cos(pitch_2));
+	}
+	else {
+		yaw_1 = 0;
+		if (R[8] == -1.0) {
+			pitch_1 = PI / 2;
+			roll_1 = yaw_1 + atan2(R[1], R[2]);
+		}
+		else {
+			pitch_1 = -PI / 2;
+			roll_1 = -1 * yaw_1 + atan2(-1 * R[1], -1 * R[2]);
+		}
+	}
+	return FRotator((INT)(pitch_1 * -K_Rad2U), (INT)(yaw_1 * K_Rad2U), (INT)(roll_1 * -K_Rad2U));
+}
 
 void UKarmaParamsCollision::execCalcContactRegion(FFrame& Stack, RESULT_DECL)
 {
@@ -21,7 +45,7 @@ void * AActor::getKModel() const
 	if (!this->KParams)
 		return 0;
 
-	return ((void *)this->KParams->KarmaData);
+	return ((ODE_PhysData*)KParams->KarmaData)->id;
 }
 
 void AActor::physKarma(FLOAT deltaTime)
@@ -31,13 +55,16 @@ void AActor::physKarma(FLOAT deltaTime)
 
 	check(Physics == PHYS_Karma);
 
-	FRotator rot;
-	FVector newPos, moveBy;
-	FCheckResult Hit(1.0f);
+	dWorldID world = ((ODE_World*)this->GetLevel()->KWorld)->id;
+	if (!world)
+	{
+		debugf(TEXT("(Karma:) AActor::physKarma: No ODE World found."));
+		return;
+	}
 
-	dWorldID world = (dWorldID)this->GetLevel()->KWorld;
-	dBodyID model = (dBodyID)this->KParams->KarmaData;
-
+	dBodyID model = ((ODE_PhysData*)KParams->KarmaData)->id;
+	if (!model)
+		return;
 
 	// Handle any updates to the rigid body state from script.
 	// Note: Because actors are always ticked before constraints, we can be sure the constraint will
@@ -45,23 +72,13 @@ void AActor::physKarma(FLOAT deltaTime)
 	FKRigidBodyState newState;
 	eventKUpdateState(newState);
 
+	ULevel* level = GetLevel();
 	const dReal * CPos = dBodyGetPosition(model);
 	const dReal * CRot = dBodyGetRotation(model); // 0,2, 3?, 5, 7?,8 10, 11; // 0 5 10
-	
-	//const dReal* CRot = dGeomGetRotation(cylgeom);
 
-	//newState.AngVel.X = CPos[0];
-	//newState.AngVel.Y = CPos[1];
-	//newState.AngVel.Z = CPos[0];
-	//this->Velocity = FVector(CPos[0], CPos[1], CPos[2]);
-	//this->Location = FVector(CPos[0], CPos[1], CPos[2]);
-	//this->Rotation = FRotator(2000, 222, 2);
-	//this->UpdateRenderData(); //no need this
-	ULevel* level = GetLevel();
-	//level->MoveActor(this, {static_cast<float>(CPos[0]), static_cast<float>(CPos[1]), static_cast<float>(CPos[2])} , FRotator(0, 0, 0), Hit); //PostKarmaStep() //5 //6 //9
-	this->Location = { static_cast<float>(CPos[0]), static_cast<float>(CPos[1]), static_cast<float>(CPos[2]) };
-	this->Rotation = { static_cast<INT>(CRot[2] * -10430.2192), static_cast<INT>(CRot[4] * 10430.2192), static_cast<INT>(CRot[6] * 10430.2192) };// 65536 / 2pi const MeReal K_Rad2U = (MeReal)10430.2192; const MeReal K_U2Rad = (MeReal)0.000095875262;
-	this->ClearRenderData();
+	this->Rotation = RotatorFromMatrix(CRot);
+	level->FarMoveActor(this, { (FLOAT)CPos[0], (FLOAT)CPos[1], (FLOAT)CPos[2] }, 0, 0, 0);
+
 	unclock(GStats.DWORDStats(GEngineStats.STATS_Karma_physKarma));
 	unguard;
 }

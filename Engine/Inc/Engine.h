@@ -68,25 +68,25 @@ ENGINE_API extern class FTempLineBatcher*	GTempLineBatcher;
 #endif
 
 #ifdef WITH_KARMA
-#if SUPPORTS_PRAGMA_PACK
-#pragma pack (push,8)
-#endif
-    #include "MePrecision.h"
-    #include "Mst.h"
-    #include "McdTriangleList.h"
-    #include "MeAssetDB.h"
-    #include "MeAssetFactory.h"
-#if SUPPORTS_PRAGMA_PACK
-#pragma pack (pop)
+	#if SUPPORTS_PRAGMA_PACK
+	#pragma pack (push,8)
+		#endif
+		#include "MePrecision.h"
+		#include "Mst.h"
+		#include "McdTriangleList.h"
+		#include "MeAssetDB.h"
+		#include "MeAssetFactory.h"
+	#if SUPPORTS_PRAGMA_PACK
+	#pragma pack (pop)
+	#endif
 #endif
 
-    // These need to be public for UnrealEd etc.
-    const MeReal K_ME2UScale = (MeReal)50;
-    const MeReal K_U2MEScale = (MeReal)0.02;
+// These need to be public for UnrealEd etc.
+const FLOAT K_ME2UScale = (FLOAT)50;
+const FLOAT K_U2MEScale = (FLOAT)0.02;
+const FLOAT K_Rad2U = (FLOAT)10430.2192;
+const FLOAT K_U2Rad = (FLOAT)0.000095875262;
 
-	const MeReal K_Rad2U = (MeReal)10430.2192;
-	const MeReal K_U2Rad = (MeReal)0.000095875262;
-#endif
 
 #include "UnForcePacking_begin.h"
 

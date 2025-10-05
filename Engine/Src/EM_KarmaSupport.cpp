@@ -6,26 +6,10 @@
 ============================================================================*/
 
 #ifdef WITH_PHYS_WRAP
-#include "ode/ode.h"
-#endif
 
-#include "EnginePrivate.h"
+#include "EM_ODE.h"
 
-#ifdef WITH_PHYS_WRAP
-
-/// ************ Some constants ************ ///
-
-/// *********** Internal structs *********** ///
-
-typedef struct _LevelPhysicsTriData
-{
-	TArray<dReal>		triangles;
-	TArray<dTriIndex>	indices;
-	dTriMeshDataID		TriMeshID;
-	dGeomID				TriMeshGeomID;
-} LevelPhysicsTriData;
-
-TArray<LevelPhysicsTriData *> LevelBSPCollision;
+static bool bODE_InitHasCallled;
 
 /// ********** Internal functions ********** ///
 /*
@@ -77,15 +61,18 @@ static void PWAddBSPTrianglesPerSurf(UModel* model, LevelPhysicsTriData* triData
 					triData->indices.AddItem(firstVertexIndex);
 					triData->indices.AddItem(model->Verts(TempNode->iVertPool + j + 1).pVertex);
 					triData->indices.AddItem(model->Verts(TempNode->iVertPool + j + 2).pVertex);
+					
 				}
 			}
 		}
 	}
 }
 
+
 static void nearCallback(void* level_ptr, dGeomID o1, dGeomID o2)
 {
 	ULevel* level = (ULevel*)level_ptr;
+	ODE_World* world = (ODE_World*)level->KWorld;
 
 	if (dGeomIsSpace(o1) || dGeomIsSpace(o2))
 	{
@@ -108,12 +95,12 @@ static void nearCallback(void* level_ptr, dGeomID o1, dGeomID o2)
 		{
 			contact[i].surface.slip1 = 0.7;
 			contact[i].surface.slip2 = 0.7;
-			contact[i].surface.mode = dContactBounce | dContactSoftCFM; //dContactSoftERP | dContactSoftCFM | dContactApprox1 | dContactSlip1 | dContactSlip2;
-			contact[i].surface.mu = dInfinity; // was: dInfinity
-			contact[i].surface.soft_erp = 0.8;
-			contact[i].surface.soft_cfm = 0.0000001;
+			contact[i].surface.mode = dContactBounce | dContactSoftCFM | dContactSoftERP | dContactApprox1 | dContactSlip1 | dContactSlip2; //dContactSoftERP | dContactSoftCFM | dContactApprox1 | dContactSlip1 | dContactSlip2;
+			contact[i].surface.mu = 0.1; // was: dInfinity
+			contact[i].surface.soft_erp = 1e-10;
+			contact[i].surface.soft_cfm = 1e-10;
 			contact[i].surface.bounce = 0.000001;
-			dJointID c = dJointCreateContact((dWorldID)level->KWorld, (dJointGroupID)level->PWContactGroup, &contact[i]);
+			dJointID c = dJointCreateContact(world->id, world->contact_group, &contact[i]);
 			dJointAttach(c,
 				dGeomGetBody(contact[i].geom.g1),
 				dGeomGetBody(contact[i].geom.g2));
@@ -124,19 +111,17 @@ static void nearCallback(void* level_ptr, dGeomID o1, dGeomID o2)
 void KInitGameKarma() // (1)
 {
     guard(KInitGameKarma);
-
-	dInitODE2(0);
-	dAllocateODEDataForThread(dAllocateMaskAll);
-
+		dInitODE2(0);
+		bODE_InitHasCallled = true;
+		dAllocateODEDataForThread(dAllocateMaskAll);
     unguard;
 }
 
 void ENGINE_API KTermGameKarma()
 {
 	guard(KTermGameKarma);
-
-	dCloseODE();
-
+		dCloseODE();
+		bODE_InitHasCallled = false;
 	unguard;
 }
 
@@ -144,21 +129,25 @@ void ENGINE_API KTermGameKarma()
 void KInitLevelKarma(ULevel* level)
 {
     guard(KInitLevelKarma);
-    
-	level->PWData = new LevelPhysicsTriData;
+
 	float gx = 0.0;
 	float gy = 0;
-	float gz = -9.81;
-	level->KWorld = (void *)dWorldCreate();
-	dWorldSetGravity( (dWorldID)level->KWorld, gx, gy, gz); //relocate // x, y, z
-	dWorldSetQuickStepNumIterations((dWorldID)level->KWorld, 512); // <-- increase for more stability
+	float gz = -950;
+
+	level->KWorld = new ODE_World;
+	ODE_World* world = (ODE_World *)level->KWorld;
+
+	level->PWData = new LevelPhysicsTriData;
+	world->id = dWorldCreate();
+	dWorldSetGravity(world->id, gx, gy, gz); //relocate // x, y, z
+	dWorldSetQuickStepNumIterations(world->id, 512); // <-- increase for more stability
 	//dWorldSetAutoDisableFlag((dWorldID)level->KWorld, 0);
 	//dWorldSetAutoDisableAverageSamplesCount((dWorldID)level->KWorld, 0);
-	dReal CFM = 1e-10;
-	dWorldSetCFM((dWorldID)level->KWorld, CFM);
-	//level->ODE_SpaceID = dSimpleSpaceCreate(0); // Space
-	level->ODE_SpaceID = dHashSpaceCreate(0);
-	level->PWContactGroup = (dJointGroupID)dJointGroupCreate(0); // Contact group
+	dReal CFM = 0.8;// 1e-10;
+	dWorldSetCFM(world->id, CFM);
+	world->space = dHashSpaceCreate(0);
+	dHashSpaceSetLevels(world->space, -2, 4096);
+	world->contact_group = dJointGroupCreate(0); // Contact group
 	
 	PWAddBSPTrianglesPerSurf(level->Model, (LevelPhysicsTriData*)level->PWData);
 	LevelPhysicsTriData* DebugTriDar = (LevelPhysicsTriData*)level->PWData;
@@ -166,27 +155,24 @@ void KInitLevelKarma(ULevel* level)
 	dGeomTriMeshDataBuildDouble(((LevelPhysicsTriData*)level->PWData)->TriMeshID,
 		((LevelPhysicsTriData*)level->PWData)->triangles.GetData(), 3 * sizeof(dReal), ((LevelPhysicsTriData*)level->PWData)->triangles.Num() / 3, // Verticles: Data, ?Step?, Count
 		((LevelPhysicsTriData*)level->PWData)->indices.GetData(), ((LevelPhysicsTriData*)level->PWData)->indices.Num(), 3 * sizeof(dTriIndex));
-	dGeomTriMeshDataPreprocess2(((LevelPhysicsTriData*)level->PWData)->TriMeshID, (1U << dTRIDATAPREPROCESS_BUILD__MAX), NULL);
-	((LevelPhysicsTriData*)level->PWData)->TriMeshGeomID = dCreateTriMesh((dSpaceID)level->ODE_SpaceID, ((LevelPhysicsTriData*)level->PWData)->TriMeshID, 0, 0, 0);
+	dGeomTriMeshDataPreprocess2(((LevelPhysicsTriData*)level->PWData)->TriMeshID, (1U << dTRIDATAPREPROCESS_BUILD_FACE_ANGLES), NULL);
+	((LevelPhysicsTriData*)level->PWData)->TriMeshGeomID = dCreateTriMesh(world->space, ((LevelPhysicsTriData*)level->PWData)->TriMeshID, 0, 0, 0);
 	dGeomSetPosition(((LevelPhysicsTriData*)level->PWData)->TriMeshGeomID, 0, 0, 0);
-
     unguard;
 }
 
 void KTermLevelKarma(ULevel* level) // Warning : At the game exit functions KTermGameKarma and KTermLevelKarma called in reverse order
 {
+	if (!bODE_InitHasCallled) { return; } //do nothing if game exit;
+
+	ODE_World* world = (ODE_World*)level->KWorld;
 	//dGeomDestroy(((LevelPhysicsTriData*)level->PWData)->TriMeshGeomID);
-	dJointGroupEmpty((dJointGroupID)level->PWContactGroup);
-	dJointGroupDestroy((dJointGroupID)level->PWContactGroup);
-	dSpaceDestroy((dSpaceID)level->ODE_SpaceID);
-	dWorldDestroy((dWorldID)level->KWorld);
-	delete (LevelPhysicsTriData *)level->PWData;
-
-	for (int i = 0; i < LevelBSPCollision.Num(); i++) {
-		delete (LevelBSPCollision(i));
-		LevelBSPCollision.Remove(i, 1);
-	}
-
+	dJointGroupEmpty(world->contact_group);
+	dJointGroupDestroy(world->contact_group);
+	dSpaceDestroy(world->space);
+	dWorldDestroy(world->id);
+	
+	delete world;
 }
 
 void KTickLevelKarma(ULevel* level, FLOAT DeltaSeconds)
@@ -195,10 +181,13 @@ void KTickLevelKarma(ULevel* level, FLOAT DeltaSeconds)
 
 	if (!level->KWorld)
 		return;
-	dSpaceCollide((dSpaceID)level->ODE_SpaceID, level, &nearCallback); // Pass the level data to callbac function
-	dWorldStep((dWorldID)level->KWorld, static_cast<dReal>(DeltaSeconds)); //DeltaSeconds
-	//dWorldQuickStep((dWorldID)level->KWorld, 0.01);
-	dJointGroupEmpty((dJointGroupID)level->PWContactGroup);
+
+	ODE_World* world = (ODE_World*)level->KWorld;
+
+	dSpaceCollide(world->space, level, &nearCallback); // Pass the level data to callbac function
+	//dWorldStep(world->id, static_cast<dReal>(DeltaSeconds)); //DeltaSeconds
+	dWorldQuickStep(world->id, 0.001);
+	dJointGroupEmpty(world->contact_group);
 	unguard;
 }
 
@@ -263,7 +252,7 @@ void KInitActorKarma(AActor* actor) //1161
 				UKarmaParamsCollision::StaticClass(), actor->GetOuter());
 		}
 
-		//KInitActorCollision(actor, 0);
+		KInitActorCollision(actor, 0);
 	}
 
 	if (actor->Physics == PHYS_Karma)
@@ -293,7 +282,10 @@ void KTermActorKarma(AActor* actor) //1280
     unguard;
 }
 
-void KInitActorCollision(AActor* actor, UBOOL makeNull) {}
+void KInitActorCollision(AActor* actor, UBOOL makeNull)
+{
+	FVector scale3D = actor->DrawScale * actor->DrawScale3D;
+}
 void KTermActorCollision(AActor* actor) {}
 
 void KInitActorDynamics(AActor* actor) 
@@ -304,6 +296,8 @@ void KInitActorDynamics(AActor* actor)
 		return;
 
 	ULevel* level = actor->GetLevel();
+	ODE_World* world = (ODE_World*)level->KWorld;
+
 	if (GIsEditor || /*!KGData->Framework || */ !level || actor->bDeleteMe)
 		return;
 
@@ -312,17 +306,22 @@ void KInitActorDynamics(AActor* actor)
 
 	//RTN_WITH_ERR_IF(!actor->KParams, "(Karma): KInitActorDynamics: No KParams.");
 
-	actor->KParams->KarmaData = (PTRINT)dBodyCreate((dWorldID)level->KWorld);
+	actor->KParams->KarmaData = (PTRINT) new ODE_PhysData; ///TODO: DONT FORGET TO FREE IT
+	ODE_PhysData* PhysData = (ODE_PhysData *)actor->KParams->KarmaData;
+
+	PhysData->id = dBodyCreate(world->id);
+	PhysData->geometry = dCreateBox(world->space, 128, 128, 128);
 	
-	dGeomID gid = dCreateBox((dSpaceID)level->ODE_SpaceID, 128, 128, 128);
-	dGeomSetBody(gid, (dBodyID)actor->KParams->KarmaData);
+	dGeomSetBody(PhysData->geometry, PhysData->id);
 	// Set start position
-	dBodySetPosition((dBodyID)actor->KParams->KarmaData, static_cast<dReal>(actor->Location[0]), static_cast<dReal>(actor->Location[1]), static_cast<dReal>(actor->Location[2]));
+	dBodySetPosition(PhysData->id, static_cast<dReal>(actor->Location[0]), static_cast<dReal>(actor->Location[1]), static_cast<dReal>(actor->Location[2]));
 	// Set rotation
-	//dBodySetRotation
-	dMass box_mass;
-	dMassSetBox(&box_mass, 1, 1, 1, 1);
-	dBodySetMass((dBodyID)actor->KParams->KarmaData, &box_mass);
+	dMatrix3 rotMatrix;
+	dRFromEulerAngles(rotMatrix, static_cast<dReal>(actor->Rotation.Roll * K_U2Rad), static_cast<dReal>(actor->Rotation.Pitch * K_U2Rad), static_cast<dReal>(actor->Rotation.Yaw * K_U2Rad));//* K_U2Rad
+	dBodySetRotation(PhysData->id, rotMatrix);
+
+	dMassSetBox(&PhysData->mass, 1, 128, 128, 128);
+	dBodySetMass(PhysData->id, &PhysData->mass);
 
 	unguard;
 }
