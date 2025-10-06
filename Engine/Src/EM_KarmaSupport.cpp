@@ -68,31 +68,57 @@ static void PWAddBSPTrianglesPerSurf(UModel* model, LevelPhysicsTriData* triData
 	}
 }
 
-static void PWAddStaticMeshTriangles(ULevel* level, int vertex_offset, int index_offset)
+static dReal heightfield_callback(void * data, int x, int y)
 {
-	/*
-	int smc = 0;
-	int nsmc = 0;
-	for (int i = 0; i < level->Actors.Num(); i++)
-	{
-		if (level->Actors(i)->DrawType == DT_StaticMesh) {
-			smc++;
-		}
-		else {
-			nsmc++;
-		}
+	ATerrainInfo* tInfo = (ATerrainInfo *)data;
+
+	if (!tInfo->GetQuadVisibilityBitmap(x, y)) {
+		return -524288.0; // WE NEED TO DO SOMETHING WITH VISIBILITY
 	}
 
-	for (int i = 0; i < level->StaticMeshBatches.Num(); i++) {
-		void * VertexData;
-		void * IndexData;
-		int VertexSize = level->StaticMeshBatches(i).Vertices.GetSize();
-		int IndexSize = level->StaticMeshBatches(i).Indices.GetSize();
-		int IndexSize1 = level->StaticMeshBatches(i).Indices.GetIndexSize();
-		level->StaticMeshBatches(i).Vertices.GetStreamData(VertexData);
-		level->StaticMeshBatches(i).Indices.GetContents(IndexData);
+	FStaticTexture StaticTexture(tInfo->TerrainMap);
+	void* texture_data = StaticTexture.GetRawTextureData(0);
+
+	_WORD p16;
+	switch (tInfo->TerrainMap->Format)
+	{
+	case TEXF_G16:
+		p16 = ((_WORD *)texture_data)[x + (tInfo->TerrainMap->USize -1 - y) * tInfo->TerrainMap->USize];//INTEL_ORDER16(pixel);
+		return (dReal)(p16-32768)/4;
+		
+	case TEXF_P8:
+		appDebugBreak(); // NOT IMPLEMENTED YET
+		return 0;
 	}
-	*/
+}
+
+static void PWAddTerrainHeightmap(ULevel* level, ODE_World * world)
+{
+	for (INT z = 0; z < 64; z++)
+	{
+		AZoneInfo* Z = level->GetZoneActor(z);
+		if (Z && Z->bTerrainZone)
+		{
+			for (INT t = 0; t < Z->Terrains.Num(); t++) {
+				ATerrainInfo* tInfo = Z->Terrains(t);
+				int TerrX = tInfo->HeightmapX;
+				int TerrY = tInfo->HeightmapY;
+				int ScaleX = tInfo->TerrainScale.X;
+				int ScaleY = tInfo->TerrainScale.Y;
+				// Heightfield creation
+				world->heightid = dGeomHeightfieldDataCreate();
+				dGeomHeightfieldDataBuildCallback(world->heightid, tInfo, heightfield_callback, TerrX * 64, TerrY * 64, 511, 511, 1.00 , REAL(0.0), REAL(0.0), 0); //tInfo->TerrainScale.Z
+				//dGeomHeightfieldDataSetBounds(world->heightid, REAL(-1.0), REAL(+1.0));
+				dGeomID gheight = dCreateHeightfield(world->TER_Space, world->heightid, 1);
+				//Set it position	
+				dMatrix3 R; 
+				dRSetIdentity(R);
+				dRFromAxisAndAngle(R, 1, 0, 0, 0.01745329251994329577f * 90); // Rotate so Z is up, not Y (which is the default orientation)
+				dGeomSetRotation(gheight, R);
+				dGeomSetPosition(gheight, 0, 0, 0);
+			}
+		}
+	}
 }
 static void nearCallback_space(void* level_ptr, dGeomID o1, dGeomID o2)
 {
@@ -125,6 +151,10 @@ static void nearCallback(void* level_ptr, dGeomID o1, dGeomID o2)
 {
 	ULevel* level = (ULevel*)level_ptr;
 	ODE_World* world = (ODE_World*)level->KWorld;
+
+	if (dGeomIsSpace(o1) && dGeomIsSpace(o2)) {
+		return;
+	}
 
 	if(dGeomGetBody)
 	if (dGeomIsSpace(o1) || dGeomIsSpace(o2))
@@ -190,7 +220,7 @@ void KInitLevelKarma(ULevel* level)
 	level->KWorld = new ODE_World;
 	ODE_World* world = (ODE_World *)level->KWorld;
 
-	level->PWData = new LevelPhysicsTriData;
+	//world->BSP_Data = new LevelPhysicsTriData;
 	world->id = dWorldCreate();
 	dWorldSetGravity(world->id, gx, gy, gz); //relocate // x, y, z
 	dWorldSetQuickStepNumIterations(world->id, 512); // <-- increase for more stability
@@ -198,27 +228,31 @@ void KInitLevelKarma(ULevel* level)
 	//dWorldSetAutoDisableAverageSamplesCount((dWorldID)level->KWorld, 0);
 	dReal CFM = 0.8;// 1e-10;
 	dWorldSetCFM(world->id, CFM);
-	world->space = dHashSpaceCreate(0);
-	world->BSP_Space = dHashSpaceCreate(world->space);
-	world->SM_Space = dHashSpaceCreate(world->space);
-	dHashSpaceSetLevels(world->space, -2, 4096);
+	world->KA_Space = dHashSpaceCreate(0);
+	world->BSP_Space = dHashSpaceCreate(world->KA_Space);
+	world->SM_Space = dHashSpaceCreate(world->KA_Space);
+	world->TER_Space = dHashSpaceCreate(world->KA_Space);
+	dHashSpaceSetLevels(world->TER_Space, -2, 4096);
+	dHashSpaceSetLevels(world->KA_Space, -2, 4096);
 	dHashSpaceSetLevels(world->BSP_Space, -2, 4096);
 	dHashSpaceSetLevels(world->SM_Space, -2, 4096);
 	world->contact_group = dJointGroupCreate(0); // Contact group
 	
 	// Now we add static level collision into arrays
-	PWAddBSPTrianglesPerSurf(level->Model, (LevelPhysicsTriData*)level->PWData);
-	PWAddStaticMeshTriangles(level, ((LevelPhysicsTriData*)level->PWData)->triangles.Num(), ((LevelPhysicsTriData*)level->PWData)->indices.Num());
-	LevelPhysicsTriData* DebugTriDar = (LevelPhysicsTriData*)level->PWData;
-	((LevelPhysicsTriData*)level->PWData)->TriMeshID = dGeomTriMeshDataCreate();
-	dGeomTriMeshDataBuildDouble(((LevelPhysicsTriData*)level->PWData)->TriMeshID,
-		((LevelPhysicsTriData*)level->PWData)->triangles.GetData(), 3 * sizeof(dReal), ((LevelPhysicsTriData*)level->PWData)->triangles.Num() / 3, // Verticles: Data, ?Step?, Count
-		((LevelPhysicsTriData*)level->PWData)->indices.GetData(), ((LevelPhysicsTriData*)level->PWData)->indices.Num(), 3 * sizeof(dTriIndex));
-	dGeomTriMeshDataPreprocess2(((LevelPhysicsTriData*)level->PWData)->TriMeshID, (1U << dTRIDATAPREPROCESS_BUILD_FACE_ANGLES), NULL);
-	((LevelPhysicsTriData*)level->PWData)->TriMeshGeomID = dCreateTriMesh(world->BSP_Space, ((LevelPhysicsTriData*)level->PWData)->TriMeshID, 0, 0, 0);
-	dGeomSetPosition(((LevelPhysicsTriData*)level->PWData)->TriMeshGeomID, 0, 0, 0);
-	dSpaceSetSublevel(world->BSP_Space, 1);
-	dSpaceSetSublevel(world->space, 1);
+	PWAddBSPTrianglesPerSurf(level->Model, &world->BSP_Data);
+	PWAddTerrainHeightmap(level, world);
+
+	world->BSP_Data.TriMeshID = dGeomTriMeshDataCreate();
+	dGeomTriMeshDataBuildDouble(world->BSP_Data.TriMeshID,
+		world->BSP_Data.triangles.GetData(), 3 * sizeof(dReal), world->BSP_Data.triangles.Num() / 3, // Verticles: Data, ?Step?, Count
+		world->BSP_Data.indices.GetData(), world->BSP_Data.indices.Num(), 3 * sizeof(dTriIndex));
+	dGeomTriMeshDataPreprocess2(world->BSP_Data.TriMeshID, (1U << dTRIDATAPREPROCESS_BUILD_FACE_ANGLES), NULL);
+	world->BSP_Data.TriMeshGeomID = dCreateTriMesh(world->BSP_Space, world->BSP_Data.TriMeshID, 0, 0, 0);
+	dGeomSetPosition(world->BSP_Data.TriMeshGeomID, 0, 0, 0);
+	dSpaceSetSublevel(world->BSP_Space, 1); // 1, 0 , 1
+	dSpaceSetSublevel(world->SM_Space, 0);
+	dSpaceSetSublevel(world->TER_Space, 2);
+	dSpaceSetSublevel(world->KA_Space, 3);
     unguard;
 }
 
@@ -230,7 +264,7 @@ void KTermLevelKarma(ULevel* level) // Warning : At the game exit functions KTer
 	//dGeomDestroy(((LevelPhysicsTriData*)level->PWData)->TriMeshGeomID);
 	dJointGroupEmpty(world->contact_group);
 	dJointGroupDestroy(world->contact_group);
-	dSpaceDestroy(world->space);
+	dSpaceDestroy(world->KA_Space); //TODO: Destroy another spaces
 	dWorldDestroy(world->id);
 	
 	delete world;
@@ -245,7 +279,7 @@ void KTickLevelKarma(ULevel* level, FLOAT DeltaSeconds)
 
 	ODE_World* world = (ODE_World*)level->KWorld;
 
-	dSpaceCollide(world->space, level, &nearCallback); // Pass the level data to callbac function
+	dSpaceCollide(world->KA_Space, level, &nearCallback); // Pass the level data to callbac function
 	//dSpaceCollide(world->BSP_Space, level, &nearCallback);
 
 	//dWorldStep(world->id, static_cast<dReal>(DeltaSeconds)); //DeltaSeconds
@@ -347,7 +381,8 @@ void KTermActorKarma(AActor* actor) //1280
 
 void KInitActorCollision(AActor* actor, UBOOL makeNull)
 {
-//FVector scale3D = actor->DrawScale * actor->DrawScale3D;
+	FVector scale3D = actor->DrawScale * actor->DrawScale3D;
+
 	if (actor->StaticMesh == NULL) { return; }
 
 	ULevel* level = actor->GetLevel();
@@ -358,9 +393,9 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull)
 
 	// Add triangles
 	for (int i = 0; i < actor->StaticMesh->VertexStream.Vertices.Num(); i++) {
-		PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.X));
-		PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.Y));
-		PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.Z));
+		PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.X * scale3D.X));
+		PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.Y * scale3D.Y));
+		PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.Z * scale3D.Z));
 	}
 	// Add indices
 	for (int i = 0; i < actor->StaticMesh->IndexBuffer.Indices.Num(); i += 3) {
@@ -417,7 +452,7 @@ void KInitActorDynamics(AActor* actor)
 	dMassSetBox(&PhysData->mass, 1, 128, 128, 128);
 	dBodySetMass(PhysData->id, &PhysData->mass);
 	dSpaceRemove(world->SM_Space, PhysData->geometry); //Remove from StaticMesh space
-	dSpaceAdd(world->space, PhysData->geometry); // And put it into dynamic space
+	dSpaceAdd(world->KA_Space, PhysData->geometry); // And put it into dynamic space
 	unguard;
 }
 void KTermActorDynamics(AActor* actor) {

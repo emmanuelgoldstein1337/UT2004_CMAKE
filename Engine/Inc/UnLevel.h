@@ -355,7 +355,6 @@ class ENGINE_API ULevel : public ULevelBase
 
 #ifdef  WITH_PHYS_WRAP
 	void *	KWorld;
-	void *	PWData;
 #endif //  WITH_PHYS_WRAP
 
 	// Constructor.

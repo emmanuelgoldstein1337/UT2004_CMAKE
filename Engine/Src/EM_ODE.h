@@ -17,10 +17,14 @@ typedef struct _LevelPhysicsTriData
 typedef struct _ODE_World
 {
 	dWorldID id = 0;
-	dSpaceID space;
+	dSpaceID KA_Space; // Space for KarmaActor
 	dSpaceID SM_Space;
 	dSpaceID BSP_Space;
+	dSpaceID TER_Space; // Terrain space
+	dHeightfieldDataID heightid;
 	dJointGroupID contact_group;
+	LevelPhysicsTriData BSP_Data; // Vertices and indices extracted from BSP
+	//LevelPhysicsTriData TER_Data;
 } ODE_World;
 
 typedef struct _ODE_PhysData
