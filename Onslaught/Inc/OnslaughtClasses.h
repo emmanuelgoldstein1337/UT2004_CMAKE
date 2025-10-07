@@ -391,6 +391,20 @@ public:
 	virtual void ChangeGear(UBOOL bReverse);
 	virtual void PackState();
 #endif
+#ifdef WITH_PHYS_WRAP
+    // Actor interface.
+    virtual UBOOL Tick(FLOAT DeltaTime, enum ELevelTick TickType);
+    virtual void preKarmaStep(FLOAT DeltaTime);
+    virtual void PostNetReceive();
+
+    // SVehicle interface.
+    virtual void UpdateVehicle(FLOAT DeltaTime);
+
+    // SCar interface.
+    virtual void ProcessCarInput();
+    virtual void ChangeGear(UBOOL bReverse);
+    virtual void PackState();
+#endif
 };
 
 struct ONSLAUGHT_API FTreadCraftState

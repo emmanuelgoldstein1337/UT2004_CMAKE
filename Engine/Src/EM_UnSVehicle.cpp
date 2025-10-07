@@ -21,6 +21,44 @@ void ASVehicle::UpdateVehicle(FLOAT DeltaTime)
 void ASVehicle::preKarmaStep(FLOAT DeltaTime)
 {
 	guard(ASVehicle::preKarmaStep);
+
+	Super::preKarmaStep(DeltaTime);
+
+	// Do script vehicle model, updating wheel grips, speeds etc.
+	eventUpdateVehicle(DeltaTime);
+
+	// If this isn't a wheeled vehicle - do nothing
+	if (Wheels.Num() == 0)
+		return;
+
+	// Do wheeled vehicle stuff model.
+	///EM McdModelID model = getKModel();	check(model);
+
+	///EM MdtBodyID body = McdModelGetBody(model); check(body);
+
+	FMatrix l2w = LocalToWorld();
+
+	for (INT i = 0; i < Wheels.Num(); i++)
+	{
+		USVehicleWheel* vw = Wheels(i);
+
+		// Find wheel center in world space.
+		FVector WheelCenter = l2w.TransformFVector(vw->WheelPosition);
+
+		// Apply drive force to wheel center.
+		///EM MeVector3 driveForce, meWheelCenter;
+		///EM driveForce[0] = vw->DriveForce * vw->WheelDir.X;
+		///EM driveForce[1] = vw->DriveForce * vw->WheelDir.Y;
+		///EM driveForce[2] = vw->DriveForce * vw->WheelDir.Z;
+
+		///EM KU2MEPosition(meWheelCenter, WheelCenter);
+
+		// Add force in wheel direction at location of wheel geometry
+		///EM MdtBodyAddForceAtPosition(body,	driveForce[0], driveForce[1], driveForce[2], meWheelCenter[0], meWheelCenter[1], meWheelCenter[2]);
+
+		// Add chassis torque from wheel
+		///EM MdtBodyAddTorque(body, vw->WheelAxle.X * vw->ChassisTorque,	vw->WheelAxle.Y * vw->ChassisTorque, vw->WheelAxle.Z * vw->ChassisTorque);
+	}
 	unguard;
 }
 
@@ -220,7 +258,7 @@ void ASVehicle::TickAuthoritative( FLOAT DeltaSeconds )
 	// Perform physics.
 	if ( !bDeleteMe && Physics != PHYS_None )
 		performPhysics( DeltaSeconds );
-
+		//physKarma(DeltaSeconds); //EM: this should not be here
 	//if( KIsAwake() ) NetUpdateTime = Level->TimeSeconds - 1; // force quick net update
 
 	unguard;
@@ -236,10 +274,11 @@ void ASVehicle::TickSimulated( FLOAT DeltaSeconds )
 // This is where we update the skeletal mesh based on the SVehicleWheel data (set in the KPerContactCallback)
 void ASVehicle::physKarma(FLOAT DeltaTime)
 {
+	
 	guard(ASVehicle::PhysKarma);
 
-	//Super::physKarma(DeltaTime);
-
+	Super::physKarma(DeltaTime);
+	/*
 	USkeletalMesh* smesh = Cast<USkeletalMesh>(Mesh);
 	if(!smesh)
 	{
@@ -315,7 +354,7 @@ void ASVehicle::physKarma(FLOAT DeltaTime)
 	}
 
 	//if (bWheelsMoving) KWake();
-
+	*/
 	unguard;
 }
 

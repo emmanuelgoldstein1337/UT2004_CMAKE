@@ -23,6 +23,8 @@ void    KTermActorDynamics(AActor* actor);
 void    KInitActorKarma(AActor* actor);
 void    KTermActorKarma(AActor* actor);
 
+void    KInitConstraintKarma(AKConstraint* con);
+void    KTermConstraintKarma(AKConstraint* con);
 // Asset DB
 UBOOL		  KShouldStopKarma(AActor* actor);
 

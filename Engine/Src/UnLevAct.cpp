@@ -121,7 +121,7 @@ AActor* ULevel::SpawnActor
 	// Set instigator
 	Actor->Instigator = Instigator;
 
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
     // Initilise Karma physics for this actor (if there are any)
     KInitActorKarma(Actor);
 #endif

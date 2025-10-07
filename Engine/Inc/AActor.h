@@ -269,8 +269,9 @@
 #endif
 
 #ifdef WITH_PHYS_WRAP
+	void KWake();
 	virtual void * getKModel() const;
-
+	virtual void preKarmaStep(FLOAT DeltaTime);
 	virtual void physKarma(FLOAT DeltaTime);
 #endif // WITH_PHYS_WRAP
 

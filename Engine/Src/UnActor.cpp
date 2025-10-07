@@ -1782,7 +1782,7 @@ void AActor::Destroy()
 		ActorRenderData = NULL;
 	}
 
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
     KTermActorKarma(this);
 	if(XLevel)
 		check(XLevel->KContactGenActors.FindItemIndex(this) == INDEX_NONE);

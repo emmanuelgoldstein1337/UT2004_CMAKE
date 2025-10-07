@@ -21,6 +21,7 @@ typedef struct _ODE_World
 	dSpaceID SM_Space;
 	dSpaceID BSP_Space;
 	dSpaceID TER_Space; // Terrain space
+	_WORD* heightfield_data;
 	dHeightfieldDataID heightid;
 	dJointGroupID contact_group;
 	LevelPhysicsTriData BSP_Data; // Vertices and indices extracted from BSP

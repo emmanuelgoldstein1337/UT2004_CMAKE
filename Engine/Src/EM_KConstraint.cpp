@@ -2,6 +2,12 @@
 
 #ifdef WITH_PHYS_WRAP
 
+///	If this is a constraint actor, find its bodies and craete it.
+///	Will only do this if Physics == PHYS_Karma.
+///	If attaching something to the world, it must be the second actor which is 'null'.
+void KInitConstraintKarma(AKConstraint* con) {}
+void KTermConstraintKarma(AKConstraint* con) {}
+
 // Updates steering and applied driving torque.
 void AKCarWheelJoint::preKarmaStep(FLOAT DeltaTime) //289
 {
@@ -21,91 +27,7 @@ void * AKConstraint::getKModel() const //499
 {
 	return NULL;
 }
-/*
-UBOOL AKConstraint::CheckOwnerUpdated() //431
-{
-	guardSlow(AKConstraint::CheckOwnerUpdated);
-	if (Owner && (INT)Owner->bTicked != GetLevel()->Ticked)
-	{
-		GetLevel()->NewlySpawned = new(GEngineMem)FActorLink(this, GetLevel()->NewlySpawned);
-		return 0;
-	}
 
-	// Make sure both any KConstraintActors are ticked before the constraint between them.
-	if (KConstraintActor1 && (INT)KConstraintActor1->bTicked != GetLevel()->Ticked)
-	{
-		GetLevel()->NewlySpawned = new(GEngineMem)FActorLink(this, GetLevel()->NewlySpawned);
-		return 0;
-	}
-
-	if (KConstraintActor2 && (INT)KConstraintActor2->bTicked != GetLevel()->Ticked)
-	{
-		GetLevel()->NewlySpawned = new(GEngineMem)FActorLink(this, GetLevel()->NewlySpawned);
-		return 0;
-	}
-
-	return 1;
-	unguardSlow;
-}
-
-
-// Main constraint 'Tick' function. This syncs any graphics etc. to the constraint itself.
-// Note - most stuff like controller is done in prePhysKarma - applied at each simulation step.
-void AKConstraint::physKarma(FLOAT deltaTime) //460
-{
-}
-
-// KConstraint (and below) use KarmaData for MdtConstriantID instead of McdModel
-McdModelID AKConstraint::getKModel() const //499
-{
-	return NULL;
-}
-
-MdtConstraintID AKConstraint::getKConstraint() const //504
-{
-    return ((MdtConstraintID)this->KConstraintData);
-}
-
-void AKConstraint::KUpdateConstraintParams() {}; // nothing to do for base class //509
-
-void AKConstraint::PostEditChange() //511
-{
-	guard(AKConstraint::PostEditChange);
-
-	if (GIsEditor)
-		this->PostEditMove();
-
-	this->KUpdateConstraintParams();
-
-	unguard;
-}
-
-// When we move a constraint - we need to update the position/axis held in
-// local space (ie. relative to each connected actor)
-void AKConstraint::PostEditMove() //525
-{
-}
-
-void AKConstraint::CheckForErrors() //590
-{
-	guard(AKConstraint::CheckForErrors);
-
-	Super::CheckForErrors();
-
-	if (!this->KConstraintActor1 && !this->KConstraintActor2)
-	{
-		GWarn->MapCheck_Add(MCTYPE_ERROR, this, TEXT("KConstraint which does not point to any Actors."));
-	}
-
-	if ((this->KConstraintActor1 && !this->KConstraintActor1->KParams) ||
-		(this->KConstraintActor2 && !this->KConstraintActor2->KParams))
-	{
-		GWarn->MapCheck_Add(MCTYPE_ERROR, this, TEXT("KConstraint references Actor with no KParams."));
-	}
-
-	unguard;
-}
-*/
 //////////////////////////////////////////////////////////
 ////// CONSTRAINT SPECIFIC KUPDATECONSTRAINTPARAMS ///////
 //////////////////////////////////////////////////////////

@@ -2,6 +2,10 @@
 
 #ifdef WITH_PHYS_WRAP
 
+void AActor::KWake() {}
+
+void AActor::preKarmaStep(FLOAT DeltaTime) {} //559
+
 // Gets ODE rotation matrix and return rotation in Unreal units
 FRotator RotatorFromMatrix(const dReal* R)
 {
@@ -45,7 +49,8 @@ void * AActor::getKModel() const
 	if (!this->KParams)
 		return 0;
 
-	return ((ODE_PhysData*)KParams->KarmaData)->id;
+	return (void *)KParams->KarmaData;
+	//return ((ODE_PhysData*)KParams->KarmaData)->id;//PTRINT
 }
 
 void AActor::physKarma(FLOAT deltaTime)
@@ -54,6 +59,8 @@ void AActor::physKarma(FLOAT deltaTime)
 	clock(GStats.DWORDStats(GEngineStats.STATS_Karma_physKarma));
 
 	check(Physics == PHYS_Karma);
+
+	if (!this->getKModel()) { return; }
 
 	dWorldID world = ((ODE_World*)this->GetLevel()->KWorld)->id;
 	if (!world)
@@ -83,6 +90,12 @@ void AActor::physKarma(FLOAT deltaTime)
 	unguard;
 }
 
+/*
+void UKarmaParamsCollision::CalcContactRegion()
+{
+	return;
+}
+*/
 /*
 void AActor::KWake()
 {

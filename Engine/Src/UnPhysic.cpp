@@ -151,13 +151,13 @@ void AActor::setPhysics(BYTE NewPhysics, AActor *NewFloor, FVector NewFloorV)
 	}
 
     
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
     BYTE OldPhysics = Physics;
 #endif
     
 	Physics = NewPhysics;
 
-#ifdef WITH_KARMA
+#if defined WITH_KARMA || defined WITH_PHYS_WRAP
     // If the new physics isn't using Karma, but the old one was, shut it down.
     if(OldPhysics == PHYS_Karma)
     {
@@ -436,6 +436,9 @@ void APawn::startNewPhysics(FLOAT deltaTime, INT Iterations)
 #ifdef WITH_KARMA
         case PHYS_Karma: physKarma(deltaTime); break;
         case PHYS_KarmaRagDoll: physKarmaRagDoll(deltaTime); break;
+#endif
+#ifdef WITH_PHYS_WRAP
+		case PHYS_Karma: physKarma(deltaTime); break;
 #endif
         case PHYS_Hovering: physHovering(deltaTime, Iterations); break; // sjs
 	}

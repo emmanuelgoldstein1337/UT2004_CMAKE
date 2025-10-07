@@ -70,26 +70,16 @@ static void PWAddBSPTrianglesPerSurf(UModel* model, LevelPhysicsTriData* triData
 
 static dReal heightfield_callback(void * data, int x, int y)
 {
+
 	ATerrainInfo* tInfo = (ATerrainInfo *)data;
+	ODE_World* world = (ODE_World*)tInfo->GetLevel()->KWorld;
+	if (x >= tInfo->HeightmapX || y >= tInfo->HeightmapY) { appDebugBreak(); }
 
 	if (!tInfo->GetQuadVisibilityBitmap(x, y)) {
 		return -524288.0; // WE NEED TO DO SOMETHING WITH VISIBILITY
 	}
 
-	FStaticTexture StaticTexture(tInfo->TerrainMap);
-	void* texture_data = StaticTexture.GetRawTextureData(0);
-
-	_WORD p16;
-	switch (tInfo->TerrainMap->Format)
-	{
-	case TEXF_G16:
-		p16 = ((_WORD *)texture_data)[x + (tInfo->TerrainMap->USize -1 - y) * tInfo->TerrainMap->USize];//INTEL_ORDER16(pixel);
-		return (dReal)(p16-32768)/4;
-		
-	case TEXF_P8:
-		appDebugBreak(); // NOT IMPLEMENTED YET
-		return 0;
-	}
+	return (dReal)(world->heightfield_data[x + (tInfo->TerrainMap->USize - 1 - y) * tInfo->TerrainMap->USize] - 32768) * tInfo->TerrainScale.Z / 256;
 }
 
 static void PWAddTerrainHeightmap(ULevel* level, ODE_World * world)
@@ -105,17 +95,34 @@ static void PWAddTerrainHeightmap(ULevel* level, ODE_World * world)
 				int TerrY = tInfo->HeightmapY;
 				int ScaleX = tInfo->TerrainScale.X;
 				int ScaleY = tInfo->TerrainScale.Y;
+
+				// Get heightfield image from game
+				FStaticTexture StaticTexture(tInfo->TerrainMap);
+				if (tInfo->TerrainMap->Format == TEXF_G16) {
+					world->heightfield_data = (_WORD*)StaticTexture.GetRawTextureData(0);
+				}
+				else {
+					appDebugBreak(); // NOT IMPLEMENTED YET
+				}
+
 				// Heightfield creation
 				world->heightid = dGeomHeightfieldDataCreate();
-				dGeomHeightfieldDataBuildCallback(world->heightid, tInfo, heightfield_callback, TerrX * 64, TerrY * 64, 511, 511, 1.00 , REAL(0.0), REAL(0.0), 0); //tInfo->TerrainScale.Z
-				//dGeomHeightfieldDataSetBounds(world->heightid, REAL(-1.0), REAL(+1.0));
+				dGeomHeightfieldDataBuildCallback(world->heightid, tInfo, heightfield_callback,
+					TerrX * tInfo->TerrainScale.X, // dReal width
+					TerrY * tInfo->TerrainScale.Y, //dReal depth
+					tInfo->HeightmapX -1, // int widthSamples ALERT!!! MAYBE WE NEED ADD -1 TO THIS
+					tInfo->HeightmapY -1, // int depthSamples
+					1.00 , REAL(0.0), REAL(0.0), 0); // dReal scale, dReal offset, dReal thickness, int bWrap
+
+				dGeomHeightfieldDataSetBounds(world->heightid, -32768, 32768);
 				dGeomID gheight = dCreateHeightfield(world->TER_Space, world->heightid, 1);
 				//Set it position	
 				dMatrix3 R; 
 				dRSetIdentity(R);
 				dRFromAxisAndAngle(R, 1, 0, 0, 0.01745329251994329577f * 90); // Rotate so Z is up, not Y (which is the default orientation)
 				dGeomSetRotation(gheight, R);
-				dGeomSetPosition(gheight, 0, 0, 0);
+				dGeomSetPosition(gheight, tInfo->Location.X, tInfo->Location.Y, tInfo->Location.Z);
+				return; // At this moment only single TerrainInfo will have ODE heightfield
 			}
 		}
 	}
@@ -232,10 +239,10 @@ void KInitLevelKarma(ULevel* level)
 	world->BSP_Space = dHashSpaceCreate(world->KA_Space);
 	world->SM_Space = dHashSpaceCreate(world->KA_Space);
 	world->TER_Space = dHashSpaceCreate(world->KA_Space);
-	dHashSpaceSetLevels(world->TER_Space, -2, 4096);
-	dHashSpaceSetLevels(world->KA_Space, -2, 4096);
-	dHashSpaceSetLevels(world->BSP_Space, -2, 4096);
-	dHashSpaceSetLevels(world->SM_Space, -2, 4096);
+	dHashSpaceSetLevels(world->TER_Space, 1, 12);
+	dHashSpaceSetLevels(world->KA_Space, 1, 12);
+	dHashSpaceSetLevels(world->BSP_Space, 1, 12);
+	dHashSpaceSetLevels(world->SM_Space, 1, 12);
 	world->contact_group = dJointGroupCreate(0); // Contact group
 	
 	// Now we add static level collision into arrays
@@ -265,9 +272,9 @@ void KTermLevelKarma(ULevel* level) // Warning : At the game exit functions KTer
 	dJointGroupEmpty(world->contact_group);
 	dJointGroupDestroy(world->contact_group);
 	dSpaceDestroy(world->KA_Space); //TODO: Destroy another spaces
-	dWorldDestroy(world->id);
-	
-	delete world;
+	dWorldDestroy(world->id);	
+	delete(world);
+	level->KWorld = NULL;
 }
 
 void KTickLevelKarma(ULevel* level, FLOAT DeltaSeconds)
@@ -282,8 +289,8 @@ void KTickLevelKarma(ULevel* level, FLOAT DeltaSeconds)
 	dSpaceCollide(world->KA_Space, level, &nearCallback); // Pass the level data to callbac function
 	//dSpaceCollide(world->BSP_Space, level, &nearCallback);
 
-	//dWorldStep(world->id, static_cast<dReal>(DeltaSeconds)); //DeltaSeconds
-	dWorldQuickStep(world->id, 0.01);
+	dWorldStep(world->id, static_cast<dReal>(0.01)); //DeltaSeconds
+	//dWorldQuickStep(world->id, 0.01);
 	dJointGroupEmpty(world->contact_group);
 	unguard;
 }
@@ -291,6 +298,8 @@ void KTickLevelKarma(ULevel* level, FLOAT DeltaSeconds)
 void KInitActorKarma(AActor* actor) //1161
 {
     guard(KInitActorKarma);
+
+	if (actor->StaticMesh == NULL && actor->Mesh == NULL) { return; } //TODO: REMOVE THIS LINE
 
 	ULevel* level = actor->GetLevel();
 
@@ -376,14 +385,23 @@ void KInitActorKarma(AActor* actor) //1161
 void KTermActorKarma(AActor* actor) //1280
 {
     guard(KTermActorKarma);
+
+	/* *** OTHER ACTOR *** */
+	if (actor->getKModel())
+	{
+		/* If there are dynamics on this actor - terminate them. */
+		if (actor->getKModel())
+			KTermActorDynamics(actor);
+
+		KTermActorCollision(actor);
+		return;
+	}
     unguard;
 }
 
-void KInitActorCollision(AActor* actor, UBOOL makeNull)
+void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 {
 	FVector scale3D = actor->DrawScale * actor->DrawScale3D;
-
-	if (actor->StaticMesh == NULL) { return; }
 
 	ULevel* level = actor->GetLevel();
 	ODE_World* world = (ODE_World*)level->KWorld;
@@ -391,23 +409,30 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull)
 	actor->KParams->KarmaData = (PTRINT) new ODE_PhysData; ///TODO: DONT FORGET TO FREE IT
 	ODE_PhysData* PhysData = (ODE_PhysData*)actor->KParams->KarmaData;
 
-	// Add triangles
-	for (int i = 0; i < actor->StaticMesh->VertexStream.Vertices.Num(); i++) {
-		PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.X * scale3D.X));
-		PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.Y * scale3D.Y));
-		PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.Z * scale3D.Z));
-	}
-	// Add indices
-	for (int i = 0; i < actor->StaticMesh->IndexBuffer.Indices.Num(); i += 3) {
-		PhysData->indices.AddItem((dTriIndex)actor->StaticMesh->IndexBuffer.Indices(i));
-		PhysData->indices.AddItem((dTriIndex)actor->StaticMesh->IndexBuffer.Indices(i + 2));
-		PhysData->indices.AddItem((dTriIndex)actor->StaticMesh->IndexBuffer.Indices(i + 1));
-	}
+	// Static Mesh
+	if (actor->StaticMesh) {
+		// Add triangles
+		for (int i = 0; i < actor->StaticMesh->VertexStream.Vertices.Num(); i++) {
+			PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.X * scale3D.X));
+			PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.Y * scale3D.Y));
+			PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.Z * scale3D.Z));
+		}
+		// Add indices
+		for (int i = 0; i < actor->StaticMesh->IndexBuffer.Indices.Num(); i += 3) {
+			PhysData->indices.AddItem((dTriIndex)actor->StaticMesh->IndexBuffer.Indices(i));
+			PhysData->indices.AddItem((dTriIndex)actor->StaticMesh->IndexBuffer.Indices(i + 2));
+			PhysData->indices.AddItem((dTriIndex)actor->StaticMesh->IndexBuffer.Indices(i + 1));
+		}
 
-	PhysData->TriMeshID = dGeomTriMeshDataCreate();
-	dGeomTriMeshDataBuildDouble(PhysData->TriMeshID, PhysData->triangles.GetData(), 3 * sizeof(dReal), PhysData->triangles.Num() / 3, PhysData->indices.GetData(), PhysData->indices.Num(), 3 * sizeof(dTriIndex));
-	//dGeomTriMeshDataPreprocess2(PhysData->TriMeshID, (1U << dTRIDATAPREPROCESS_BUILD__MIN), NULL);
-	PhysData->geometry = dCreateTriMesh(world->SM_Space, PhysData->TriMeshID, 0, 0, 0);
+		PhysData->TriMeshID = dGeomTriMeshDataCreate();
+		dGeomTriMeshDataBuildDouble(PhysData->TriMeshID, PhysData->triangles.GetData(), 3 * sizeof(dReal), PhysData->triangles.Num() / 3, PhysData->indices.GetData(), PhysData->indices.Num(), 3 * sizeof(dTriIndex));
+		//dGeomTriMeshDataPreprocess2(PhysData->TriMeshID, (1U << dTRIDATAPREPROCESS_BUILD__MIN), NULL);
+		PhysData->geometry = dCreateTriMesh(world->SM_Space, PhysData->TriMeshID, 0, 0, 0);
+	}
+	// Skeletar Mesh
+	if (actor->Mesh) {
+		PhysData->geometry = dCreateSphere(world->SM_Space, 128);
+	}
 
 	//Set position of the geom
 	dGeomSetPosition(PhysData->geometry, static_cast<dReal>(actor->Location[0]), static_cast<dReal>(actor->Location[1]), static_cast<dReal>(actor->Location[2]));
@@ -416,8 +441,20 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull)
 	dRFromEulerAngles(rotMatrix, static_cast<dReal>(actor->Rotation.Roll * K_U2Rad), static_cast<dReal>(actor->Rotation.Pitch * K_U2Rad), static_cast<dReal>(actor->Rotation.Yaw * K_U2Rad));
 	dGeomSetRotation(PhysData->geometry, rotMatrix);
 }
-void KTermActorCollision(AActor* actor) {
+void KTermActorCollision(AActor* actor)
+{
+	guard(KTermActorCollision);
 
+	if (!bODE_InitHasCallled) { return; } //maybe at exit we need this to avoid errors, maybe not.
+	if (!actor->KParams->KarmaData) { return; }
+	if (!actor->GetLevel()->KWorld) { return; }
+
+	ODE_PhysData* PhysData = (ODE_PhysData*)actor->KParams->KarmaData;
+	dGeomDestroy(PhysData->geometry);
+	delete((ODE_PhysData*)actor->KParams->KarmaData);
+	actor->KParams->KarmaData = NULL;
+
+	unguard;
 }
 
 void KInitActorDynamics(AActor* actor) 
@@ -428,6 +465,7 @@ void KInitActorDynamics(AActor* actor)
 		return;
 
 	ULevel* level = actor->GetLevel();
+	UKMeshProps* MeshProps = 0;
 	ODE_World* world = (ODE_World*)level->KWorld;
 	ODE_PhysData* PhysData = (ODE_PhysData*)actor->KParams->KarmaData;
 
@@ -437,25 +475,60 @@ void KInitActorDynamics(AActor* actor)
 	if (actor->bStatic)
 		debugf(TEXT("(ODE): KInitActorDynamics: bStatic is true."));
 
-	
 	PhysData->id = dBodyCreate(world->id);
 	dGeomSetBody(PhysData->geometry, PhysData->id);
 
-
+	if (actor->StaticMesh && !actor->Mesh) {
+		MeshProps = actor->StaticMesh->KPhysicsProps;
+		
+		dMassSetTrimesh(&PhysData->mass, 1, PhysData->geometry);
+		PhysData->mass.c[0] = 0;
+		PhysData->mass.c[1] = 0;
+		PhysData->mass.c[2] = 0;
+		//dMassTranslate(&PhysData->mass, 0, 0, 0);
+		dBodySetMass(PhysData->id, &PhysData->mass);
+	}
+	if (actor->Mesh) {
+		MeshProps = (Cast<USkeletalMesh>(actor->Mesh))->KPhysicsProps;
+		dMassSetSphere(&PhysData->mass, 1, 128);
+		dBodySetMass(PhysData->id, &PhysData->mass);
+	}
+	
+	
 	// Set start position
-	dBodySetPosition(PhysData->id, static_cast<dReal>(actor->Location[0]), static_cast<dReal>(actor->Location[1]), static_cast<dReal>(actor->Location[2]));
+	dBodySetPosition(PhysData->id, static_cast<dReal>(actor->Location[0]), static_cast<dReal>(actor->Location[1]), static_cast<dReal>(actor->Location[2]));//static_cast<dReal>(actor->Location[0]), static_cast<dReal>(actor->Location[1]), static_cast<dReal>(actor->Location[2])
 	// Set rotation
 	dMatrix3 rotMatrix;
 	dRFromEulerAngles(rotMatrix, static_cast<dReal>(actor->Rotation.Roll * K_U2Rad), static_cast<dReal>(actor->Rotation.Pitch * K_U2Rad), static_cast<dReal>(actor->Rotation.Yaw * K_U2Rad));
 	dBodySetRotation(PhysData->id, rotMatrix);
 
-	dMassSetBox(&PhysData->mass, 1, 128, 128, 128);
-	dBodySetMass(PhysData->id, &PhysData->mass);
+	
+
+	//dMassSetBox(&PhysData->mass, 1, 128, 128, 128);
 	dSpaceRemove(world->SM_Space, PhysData->geometry); //Remove from StaticMesh space
 	dSpaceAdd(world->KA_Space, PhysData->geometry); // And put it into dynamic space
 	unguard;
 }
 void KTermActorDynamics(AActor* actor) {
+	guard(KTermActorDynamics);
+
+	if (!bODE_InitHasCallled) { return; } //maybe at exit we need this to avoid errors, maybe not.
+	if (!actor->KParams->KarmaData) { return; }
+	if (!actor->GetLevel()->KWorld) { return; }
+
+	ODE_PhysData* PhysData = (ODE_PhysData*)actor->KParams->KarmaData;
+	
+	if (!PhysData->id) { return; }
+
+	// I dont know, maybe actor must be removed from ODE space
+	
+	// all geoms that link to this body must be notified that the body is about	to disappear.
+	dGeomSetBody(PhysData->geometry, 0);
+
+	// Destroy body
+	dBodyDestroy(PhysData->id);
+	PhysData->id = NULL;
+	unguard;
 }
 
 #endif // WITH_PHYS_WRAP
