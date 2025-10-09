@@ -2,7 +2,7 @@
 
 #ifdef WITH_PHYS_WRAP
 
-#include "EM_ODE.h"
+#include "EM_PhysX.h"
 
 // Remove any contacts due the line wheels
 void KTermSVehicleDynamics(ASVehicle* v)

@@ -1,4 +1,4 @@
-#include "EM_ODE.h"
+#include "EM_PhysX.h"
 
 #ifdef WITH_PHYS_WRAP
 

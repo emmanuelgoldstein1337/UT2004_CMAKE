@@ -7,21 +7,18 @@
 
 #ifdef WITH_PHYS_WRAP
 
-#include "PxPhysics.h"
-#include "PxPhysicsAPI.h"
+#include "EM_PhysX.h"
 
-#include "EM_ODE.h"
-
-using namespace physx;
-
-static PxDefaultAllocator		gAllocator;
-static PxDefaultErrorCallback	gErrorCallback;
-static PxFoundation* gFoundation = NULL;
-static PxPhysics* gPhysics = NULL;
-static PxDefaultCpuDispatcher* gDispatcher = NULL;
-static PxScene* gScene = NULL;
-static PxMaterial* gMaterial = NULL;
-static PxPvd* gPvd = NULL;
+static physx::PxDefaultAllocator		gAllocator;
+static physx::PxDefaultErrorCallback	gErrorCallback;
+static physx::PxFoundation * Foundation = NULL;
+static physx::PxPhysics * Physics = NULL;
+static physx::PxDefaultCpuDispatcher * Dispatcher = NULL;
+static physx::PxSceneDesc * SceneDesc;
+//static physx::PxScene* gScene = NULL;
+//static physx::PxMaterial* gMaterial = NULL;
+static physx::PxPvd * Pvd = NULL; // PhysX Visual Debugger
+static physx::PxTolerancesScale TolerancesScale;
 
 static bool bODE_InitHasCallled;
 
@@ -195,9 +192,29 @@ void KInitGameKarma() // (1)
 {
     guard(KInitGameKarma);
 		
-		//PhysX
-		gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+		// PhysX
+		Foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
 		
+		// Debugging
+		Pvd = physx::PxCreatePvd(*Foundation);
+		physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
+		Pvd->connect(*transport, physx::PxPvdInstrumentationFlag::eALL);
+		
+		// Unit scale
+		TolerancesScale.length = 100;
+		TolerancesScale.speed = 950;
+
+		// Create physics
+		Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *Foundation, TolerancesScale, true, Pvd);
+
+		// Scene
+		SceneDesc = new physx::PxSceneDesc(Physics->getTolerancesScale());
+		SceneDesc->gravity = physx::PxVec3(0.0f, 0.0f, -9.5f);
+
+		// Dispatcher
+		Dispatcher = physx::PxDefaultCpuDispatcherCreate(2);
+		SceneDesc->cpuDispatcher = Dispatcher;
+		SceneDesc->filterShader = physx::PxDefaultSimulationFilterShader;
     unguard;
 }
 
@@ -213,13 +230,28 @@ void ENGINE_API KTermGameKarma()
 void KInitLevelKarma(ULevel* level)
 {
     guard(KInitLevelKarma);
-	/*
-	float gx = 0.0;
-	float gy = 0;
-	float gz = -950.0;
 
-	level->KWorld = new ODE_World;
-	ODE_World* world = (ODE_World *)level->KWorld;
+	level->KWorld = new PhysX_World;
+	PhysX_World* World = (PhysX_World*)level->KWorld;
+	
+	World->Scene = Physics->createScene(*SceneDesc);
+
+	physx::PxPvdSceneClient* PvdClient = World->Scene->getScenePvdClient();
+	if (PvdClient)
+	{
+		PvdClient->setScenePvdFlag(physx::PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
+		PvdClient->setScenePvdFlag(physx::PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
+		PvdClient->setScenePvdFlag(physx::PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
+	}
+
+	// create simulation
+	physx::PxMaterial * Material = Physics->createMaterial(0.5f, 0.5f, 0.6f);
+	physx::PxRigidStatic* groundPlane = PxCreatePlane(*Physics, physx::PxPlane(0, 1, 0, 50), *Material);
+	World->Scene->addActor(*groundPlane);
+
+
+	/*
+
 
 	//world->BSP_Data = new LevelPhysicsTriData;
 	world->id = dWorldCreate();
@@ -278,12 +310,16 @@ void KTermLevelKarma(ULevel* level) // Warning : At the game exit functions KTer
 void KTickLevelKarma(ULevel* level, FLOAT DeltaSeconds)
 {
 	guard(KTickLevelKarma);
-	/*
+	
 	if (!level->KWorld)
 		return;
 
-	ODE_World* world = (ODE_World*)level->KWorld;
+	PhysX_World * world = (PhysX_World*)level->KWorld;
 
+	world->Scene->simulate(1.0f / 60.0f);
+	world->Scene->fetchResults(true);
+
+	/*
 	dSpaceCollide(world->KA_Space, level, &nearCallback); // Pass the level data to callbac function
 	//dSpaceCollide(world->BSP_Space, level, &nearCallback);
 

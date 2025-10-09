@@ -1,4 +1,12 @@
+#include "PxPhysics.h"
+#include "PxPhysicsAPI.h"
+
 #include "EnginePrivate.h"
+
+typedef struct _PhysX_World
+{
+	physx::PxScene* Scene;
+} PhysX_World;
 
 /*
 /// ************ Some constants ************ ///
