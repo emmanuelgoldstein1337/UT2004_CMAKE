@@ -141,11 +141,13 @@ static void nearCallback_space(void* level_ptr, dGeomID o1, dGeomID o2)
 		{
 			contact[i].surface.slip1 = 0.7;
 			contact[i].surface.slip2 = 0.7;
-			contact[i].surface.mode = dContactBounce | dContactSoftCFM | dContactSoftERP | dContactApprox1 | dContactSlip1 | dContactSlip2; //dContactSoftERP | dContactSoftCFM | dContactApprox1 | dContactSlip1 | dContactSlip2;
+			contact[i].surface.mode = dContactBounce | dContactSoftCFM | dContactApprox1 | dContactSoftERP | dContactSlip1 | dContactSlip2 | dContactRolling; //dContactSoftERP | dContactSoftCFM | dContactApprox1 | dContactSlip1 | dContactSlip2;
 			contact[i].surface.mu = 0.1; // was: dInfinity
 			contact[i].surface.soft_erp = 1e-10;
 			contact[i].surface.soft_cfm = 1e-10;
 			contact[i].surface.bounce = 0.000001;
+			contact[i].surface.rho = 10.001;
+			contact[i].surface.rho2 = 10.001;
 			dJointID c = dJointCreateContact(world->id, world->contact_group, &contact[i]);
 			dJointAttach(c,
 				dGeomGetBody(contact[i].geom.g1),
@@ -185,7 +187,7 @@ static void nearCallback(void* level_ptr, dGeomID o1, dGeomID o2)
 		{
 			contact[i].surface.slip1 = 0.7;
 			contact[i].surface.slip2 = 0.7;
-			contact[i].surface.mode = dContactBounce | dContactSoftCFM | dContactSoftERP | dContactApprox1 | dContactSlip1 | dContactSlip2; //dContactSoftERP | dContactSoftCFM | dContactApprox1 | dContactSlip1 | dContactSlip2;
+			contact[i].surface.mode = dContactBounce | dContactSoftCFM | dContactSoftERP | dContactApprox1 | dContactSlip1 | dContactSlip2 | dContactRolling; //dContactSoftERP | dContactSoftCFM | dContactApprox1 | dContactSlip1 | dContactSlip2;
 			contact[i].surface.mu = 0.1; // was: dInfinity
 			contact[i].surface.soft_erp = 1e-10;
 			contact[i].surface.soft_cfm = 1e-10;
@@ -222,7 +224,7 @@ void KInitLevelKarma(ULevel* level)
 
 	float gx = 0.0;
 	float gy = 0;
-	float gz = -950;
+	float gz = -950.0;
 
 	level->KWorld = new ODE_World;
 	ODE_World* world = (ODE_World *)level->KWorld;
@@ -233,8 +235,9 @@ void KInitLevelKarma(ULevel* level)
 	dWorldSetQuickStepNumIterations(world->id, 512); // <-- increase for more stability
 	//dWorldSetAutoDisableFlag((dWorldID)level->KWorld, 0);
 	//dWorldSetAutoDisableAverageSamplesCount((dWorldID)level->KWorld, 0);
-	dReal CFM = 0.8;// 1e-10;
+	dReal CFM = 0;  //0.8;// 1e-10;
 	dWorldSetCFM(world->id, CFM);
+	
 	world->KA_Space = dHashSpaceCreate(0);
 	world->BSP_Space = dHashSpaceCreate(world->KA_Space);
 	world->SM_Space = dHashSpaceCreate(world->KA_Space);
@@ -431,7 +434,10 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 	}
 	// Skeletar Mesh
 	if (actor->Mesh) {
-		PhysData->geometry = dCreateSphere(world->SM_Space, 128);
+		//PhysData->geometry = dCreateSphere(world->SM_Space, 128);
+		USkeletalMesh* smesh = Cast<USkeletalMesh>(actor->Mesh);
+		PhysData->geometry = dCreateBox(world->SM_Space, (dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).X * K_ME2UScale,
+			(dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Y * K_ME2UScale, (dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Z * K_ME2UScale);
 	}
 
 	//Set position of the geom
@@ -519,6 +525,10 @@ void KTermActorDynamics(AActor* actor) {
 	ODE_PhysData* PhysData = (ODE_PhysData*)actor->KParams->KarmaData;
 	
 	if (!PhysData->id) { return; }
+
+	// Do any vehicle clean-up (removing wheel-contacts)
+	ASVehicle* v = Cast<ASVehicle>(actor);
+		if (v) { KTermSVehicleDynamics(v); }
 
 	// I dont know, maybe actor must be removed from ODE space
 	

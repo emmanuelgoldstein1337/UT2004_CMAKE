@@ -25,6 +25,10 @@ void    KTermActorKarma(AActor* actor);
 
 void    KInitConstraintKarma(AKConstraint* con);
 void    KTermConstraintKarma(AKConstraint* con);
+
+// Vehicle
+void		  KTermSVehicleDynamics(ASVehicle* v);
+
 // Asset DB
 UBOOL		  KShouldStopKarma(AActor* actor);
 

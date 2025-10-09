@@ -28,6 +28,13 @@ typedef struct _ODE_World
 	//LevelPhysicsTriData TER_Data;
 } ODE_World;
 
+typedef struct _ODE_Wheel
+{
+	dBodyID	id = 0;
+	dGeomID	geom;
+	dJointID joint;
+} ODE_Wheel;
+
 typedef struct _ODE_PhysData
 {
 	dBodyID	id = 0;
@@ -37,6 +44,15 @@ typedef struct _ODE_PhysData
 	TArray<dReal>		triangles;
 	TArray<dTriIndex>	indices;
 	dTriMeshDataID		TriMeshID;
+
+	TArray<ODE_Wheel>	wheels;
+
+	_ODE_PhysData() {
+
+	}
+	~_ODE_PhysData() {
+		//TODO: Put something here
+	}
 } ODE_PhysData;
 
 /// *********** Support functions ********** ///

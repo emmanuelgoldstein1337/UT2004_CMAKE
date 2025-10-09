@@ -73,6 +73,8 @@ void AActor::physKarma(FLOAT deltaTime)
 	if (!model)
 		return;
 
+	preKarmaStep(deltaTime);// !!!! BUG ALERT: ORIGINALY THIS CALLED NOT FROM HERE !!!!
+
 	// Handle any updates to the rigid body state from script.
 	// Note: Because actors are always ticked before constraints, we can be sure the constraint will
 	// get the most up-to-date state.
@@ -107,15 +109,6 @@ UBOOL AActor::KIsAwake()
 {
 	guard(AActor::KIsAwake);
 	return 0;
-	unguard;
-}
-
-void AActor::physKarma(FLOAT deltaTime)
-{
-	guard(AActor::physKarma);
-	//clock(GStats.DWORDStats(GEngineStats.STATS_Karma_physKarma));
-	//physKarma_internal(deltaTime);
-	//unclock(GStats.DWORDStats(GEngineStats.STATS_Karma_physKarma));
 	unguard;
 }
 

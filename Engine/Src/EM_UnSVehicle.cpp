@@ -1,6 +1,8 @@
-#include "EnginePrivate.h"
+//#include "EnginePrivate.h"
 
 #ifdef WITH_PHYS_WRAP
+
+#include "EM_ODE.h"
 
 // Remove any contacts due the line wheels
 void KTermSVehicleDynamics(ASVehicle* v)
@@ -46,18 +48,21 @@ void ASVehicle::preKarmaStep(FLOAT DeltaTime)
 		FVector WheelCenter = l2w.TransformFVector(vw->WheelPosition);
 
 		// Apply drive force to wheel center.
-		///EM MeVector3 driveForce, meWheelCenter;
-		///EM driveForce[0] = vw->DriveForce * vw->WheelDir.X;
-		///EM driveForce[1] = vw->DriveForce * vw->WheelDir.Y;
-		///EM driveForce[2] = vw->DriveForce * vw->WheelDir.Z;
+		 FVector driveForce, meWheelCenter; ///EM
+		 driveForce[0] = vw->DriveForce * vw->WheelDir.X;
+		 driveForce[1] = vw->DriveForce * vw->WheelDir.Y;
+		 driveForce[2] = vw->DriveForce * vw->WheelDir.Z;
 
-		///EM KU2MEPosition(meWheelCenter, WheelCenter);
+		meWheelCenter = WheelCenter;
 
 		// Add force in wheel direction at location of wheel geometry
 		///EM MdtBodyAddForceAtPosition(body,	driveForce[0], driveForce[1], driveForce[2], meWheelCenter[0], meWheelCenter[1], meWheelCenter[2]);
 
 		// Add chassis torque from wheel
 		///EM MdtBodyAddTorque(body, vw->WheelAxle.X * vw->ChassisTorque,	vw->WheelAxle.Y * vw->ChassisTorque, vw->WheelAxle.Z * vw->ChassisTorque);
+
+		vw->ChassisTorque += 12;
+		vw->WheelAxle.X += 64;
 	}
 	unguard;
 }
@@ -65,7 +70,7 @@ void ASVehicle::preKarmaStep(FLOAT DeltaTime)
 #define GROUND_VEL_THRESH	(0.001f)
 
 // Use this to reset wheels - for if there are no contacts with ground etc.
-void ASVehicle::preContactUpdate()
+void ASVehicle::preContactUpdate() //TODO: Clear this
 {
 	guard(ASVehicle::preContactUpdate);
 	unguard;
@@ -86,6 +91,64 @@ static FMatrix RefMeshToWorld(USkeletalMesh* smesh)
 	return NewMatrix;
 }
 
+static void addODEWheels(ASVehicle* vehicle)
+{
+	
+	ODE_PhysData* PhysData = (ODE_PhysData*)vehicle->KParams->KarmaData;
+	ULevel* level = vehicle->GetLevel();
+	ODE_World* world = (ODE_World*)level->KWorld;
+	dBodyID vehicle_id = PhysData->id;
+
+	for (INT i = 0; i < vehicle->Wheels.Num(); i++)
+	{
+		USVehicleWheel* wheel = vehicle->Wheels(i);
+
+		// Body
+		PhysData->wheels.Add(1);
+		PhysData->wheels(i).id = dBodyCreate(world->id);
+		dBodyID id = PhysData->wheels(i).id;
+
+		// Rotation
+		dMatrix3 rotMatrix;
+		dRFromEulerAngles(rotMatrix, static_cast<dReal>(wheel->WheelAxle.X * K_U2Rad), static_cast<dReal>(wheel->WheelAxle.Y * K_U2Rad), static_cast<dReal>(wheel->WheelAxle.Z * K_U2Rad));
+		dBodySetRotation(id, rotMatrix);
+
+		// Position
+		dBodySetPosition(id, wheel->WheelPosition.X, wheel->WheelPosition.Y, wheel->WheelPosition.Z);
+		
+
+		// Mass
+		dMass mass;
+		dMassSetSphere(&mass, 1, (dReal)wheel->WheelRadius);
+		dMassAdjust(&mass, 0.2); //TODO: Adjust it later
+		dBodySetMass(id, &mass);
+
+		// Geom
+		PhysData->wheels(i).geom = dCreateSphere(world->KA_Space, (dReal)wheel->WheelRadius);
+		dGeomSetBody(PhysData->wheels(i).geom, id);
+
+		// Joints
+		PhysData->wheels(i).joint = dJointCreateHinge2(world->id, 0);
+		//PhysData->wheels(i).joint = dJointCreateFixed(world->id, 0);
+		dJointID joint_id = PhysData->wheels(i).joint;
+		//dBodySetPosition(id, -10, 0, -10);
+
+		dJointAttach(joint_id, vehicle_id, id);
+		//dJointSetFixed(joint_id);
+
+		dJointSetHinge2Anchor(joint_id, wheel->WheelPosition.X, wheel->WheelPosition.Y, wheel->WheelPosition.Z);
+		const dVector3 yunit = { 0, 1, 0 }, zunit = { 0, 0, 1 };
+		dJointSetHinge2Axes(joint_id, yunit, zunit);
+
+		dJointSetHinge2Param(joint_id, dParamSuspensionERP, 0.4); // set joint suspension
+		dJointSetHinge2Param(joint_id, dParamSuspensionCFM, 0.8);
+
+		// set stops to make sure wheels always stay in alignment
+		dJointSetHinge2Param(joint_id, dParamLoStop, 0);
+		dJointSetHinge2Param(joint_id, dParamHiStop, 0);
+	}
+	
+}
 
 void ASVehicle::PostBeginPlay()
 {
@@ -179,6 +242,8 @@ void ASVehicle::PostBeginPlay()
 			vw->SupportPivotDistance = DeltaCrossUp | PivotAxis; 
 		}
 	}
+
+	addODEWheels(this); //TODO: Relocate this
 
 	unguard;
 }
@@ -276,9 +341,9 @@ void ASVehicle::physKarma(FLOAT DeltaTime)
 {
 	
 	guard(ASVehicle::PhysKarma);
-
+	
 	Super::physKarma(DeltaTime);
-	/*
+
 	USkeletalMesh* smesh = Cast<USkeletalMesh>(Mesh);
 	if(!smesh)
 	{
@@ -354,7 +419,7 @@ void ASVehicle::physKarma(FLOAT DeltaTime)
 	}
 
 	//if (bWheelsMoving) KWake();
-	*/
+
 	unguard;
 }
 
