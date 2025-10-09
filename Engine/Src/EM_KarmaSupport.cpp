@@ -7,36 +7,27 @@
 
 #ifdef WITH_PHYS_WRAP
 
+#include "PxPhysics.h"
+#include "PxPhysicsAPI.h"
+
 #include "EM_ODE.h"
+
+using namespace physx;
+
+static PxDefaultAllocator		gAllocator;
+static PxDefaultErrorCallback	gErrorCallback;
+static PxFoundation* gFoundation = NULL;
+static PxPhysics* gPhysics = NULL;
+static PxDefaultCpuDispatcher* gDispatcher = NULL;
+static PxScene* gScene = NULL;
+static PxMaterial* gMaterial = NULL;
+static PxPvd* gPvd = NULL;
 
 static bool bODE_InitHasCallled;
 
 /// ********** Internal functions ********** ///
+
 /*
-static void PWAddBSPTriangles(UModel* model, LevelPhysicsTriData* triData)
-{
-	for (int i = 0; i < model->Points.Num(); i++) {
-		//FVector temp_vector = ((FVector*)model->Points.GetData())[i];
-		FVector temp_vector = model->Points(i);
-		triData->triangles.AddItem((dReal)temp_vector[0]);
-		triData->triangles.AddItem((dReal)temp_vector[1]);
-		triData->triangles.AddItem((dReal)temp_vector[2]);
-	}
-
-	for (int i = 0; i < model->Nodes.Num(); i++) {
-		FBspSurf* Surf = &model->Surfs(model->Nodes(i).iSurf);
-		if (!(Surf->PolyFlags & PF_NotSolid)) {
-
-			for (int k = 0; k < model->Nodes(i).NumVertices-2; k++) // !(Surf->PolyFlags & PF_NotSolid) // If there are any triangles to add.
-			{
-				triData->indices.AddItem(model->Verts(model->Nodes(i).iVertPool + k).pVertex);
-				triData->indices.AddItem(model->Verts(model->Nodes(i).iVertPool + k + 1).pVertex);
-				triData->indices.AddItem(model->Verts(model->Nodes(i).iVertPool + k + 2).pVertex);
-			}
-		}
-	}
-}
-*/
 static void PWAddBSPTrianglesPerSurf(UModel* model, LevelPhysicsTriData* triData) //CURRENT
 {
 	for (int i = 0; i < model->Points.Num(); i++) {
@@ -199,20 +190,21 @@ static void nearCallback(void* level_ptr, dGeomID o1, dGeomID o2)
 		}
 	}
 }
-
+*/
 void KInitGameKarma() // (1)
 {
     guard(KInitGameKarma);
-		dInitODE2(0);
-		bODE_InitHasCallled = true;
-		dAllocateODEDataForThread(dAllocateMaskAll);
+		
+		//PhysX
+		gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+		
     unguard;
 }
 
 void ENGINE_API KTermGameKarma()
 {
 	guard(KTermGameKarma);
-		dCloseODE();
+
 		bODE_InitHasCallled = false;
 	unguard;
 }
@@ -221,7 +213,7 @@ void ENGINE_API KTermGameKarma()
 void KInitLevelKarma(ULevel* level)
 {
     guard(KInitLevelKarma);
-
+	/*
 	float gx = 0.0;
 	float gy = 0;
 	float gz = -950.0;
@@ -263,6 +255,7 @@ void KInitLevelKarma(ULevel* level)
 	dSpaceSetSublevel(world->SM_Space, 0);
 	dSpaceSetSublevel(world->TER_Space, 2);
 	dSpaceSetSublevel(world->KA_Space, 3);
+	*/
     unguard;
 }
 
@@ -270,6 +263,7 @@ void KTermLevelKarma(ULevel* level) // Warning : At the game exit functions KTer
 {
 	if (!bODE_InitHasCallled) { return; } //do nothing if game exit;
 
+	/*
 	ODE_World* world = (ODE_World*)level->KWorld;
 	//dGeomDestroy(((LevelPhysicsTriData*)level->PWData)->TriMeshGeomID);
 	dJointGroupEmpty(world->contact_group);
@@ -278,12 +272,13 @@ void KTermLevelKarma(ULevel* level) // Warning : At the game exit functions KTer
 	dWorldDestroy(world->id);	
 	delete(world);
 	level->KWorld = NULL;
+	*/
 }
 
 void KTickLevelKarma(ULevel* level, FLOAT DeltaSeconds)
 {
 	guard(KTickLevelKarma);
-
+	/*
 	if (!level->KWorld)
 		return;
 
@@ -295,6 +290,7 @@ void KTickLevelKarma(ULevel* level, FLOAT DeltaSeconds)
 	dWorldStep(world->id, static_cast<dReal>(0.01)); //DeltaSeconds
 	//dWorldQuickStep(world->id, 0.01);
 	dJointGroupEmpty(world->contact_group);
+	*/
 	unguard;
 }
 
@@ -404,6 +400,7 @@ void KTermActorKarma(AActor* actor) //1280
 
 void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 {
+	/*
 	FVector scale3D = actor->DrawScale * actor->DrawScale3D;
 
 	ULevel* level = actor->GetLevel();
@@ -446,11 +443,12 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 	dMatrix3 rotMatrix;
 	dRFromEulerAngles(rotMatrix, static_cast<dReal>(actor->Rotation.Roll * K_U2Rad), static_cast<dReal>(actor->Rotation.Pitch * K_U2Rad), static_cast<dReal>(actor->Rotation.Yaw * K_U2Rad));
 	dGeomSetRotation(PhysData->geometry, rotMatrix);
+	*/
 }
 void KTermActorCollision(AActor* actor)
 {
 	guard(KTermActorCollision);
-
+	/*
 	if (!bODE_InitHasCallled) { return; } //maybe at exit we need this to avoid errors, maybe not.
 	if (!actor->KParams->KarmaData) { return; }
 	if (!actor->GetLevel()->KWorld) { return; }
@@ -459,7 +457,7 @@ void KTermActorCollision(AActor* actor)
 	dGeomDestroy(PhysData->geometry);
 	delete((ODE_PhysData*)actor->KParams->KarmaData);
 	actor->KParams->KarmaData = NULL;
-
+	*/
 	unguard;
 }
 
@@ -469,7 +467,7 @@ void KInitActorDynamics(AActor* actor)
 
 	if (actor->bDeleteMe)
 		return;
-
+	/*
 	ULevel* level = actor->GetLevel();
 	UKMeshProps* MeshProps = 0;
 	ODE_World* world = (ODE_World*)level->KWorld;
@@ -513,11 +511,12 @@ void KInitActorDynamics(AActor* actor)
 	//dMassSetBox(&PhysData->mass, 1, 128, 128, 128);
 	dSpaceRemove(world->SM_Space, PhysData->geometry); //Remove from StaticMesh space
 	dSpaceAdd(world->KA_Space, PhysData->geometry); // And put it into dynamic space
+	*/
 	unguard;
 }
 void KTermActorDynamics(AActor* actor) {
 	guard(KTermActorDynamics);
-
+	/*
 	if (!bODE_InitHasCallled) { return; } //maybe at exit we need this to avoid errors, maybe not.
 	if (!actor->KParams->KarmaData) { return; }
 	if (!actor->GetLevel()->KWorld) { return; }
@@ -538,6 +537,7 @@ void KTermActorDynamics(AActor* actor) {
 	// Destroy body
 	dBodyDestroy(PhysData->id);
 	PhysData->id = NULL;
+	*/
 	unguard;
 }
 

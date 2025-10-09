@@ -1,7 +1,6 @@
-#include "ode/ode.h" //dont forget WHITH_PHYS_WRAP macro
-
 #include "EnginePrivate.h"
 
+/*
 /// ************ Some constants ************ ///
 
 /// *********** Internal structs *********** ///
@@ -54,5 +53,5 @@ typedef struct _ODE_PhysData
 		//TODO: Put something here
 	}
 } ODE_PhysData;
-
+*/
 /// *********** Support functions ********** ///

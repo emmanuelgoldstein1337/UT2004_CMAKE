@@ -7,6 +7,7 @@ void AActor::KWake() {}
 void AActor::preKarmaStep(FLOAT DeltaTime) {} //559
 
 // Gets ODE rotation matrix and return rotation in Unreal units
+/*
 FRotator RotatorFromMatrix(const dReal* R)
 {
 	dReal pitch_1, pitch_2, roll_1, roll_2, yaw_1, yaw_2;
@@ -31,7 +32,7 @@ FRotator RotatorFromMatrix(const dReal* R)
 	}
 	return FRotator((INT)(pitch_1 * -K_Rad2U), (INT)(yaw_1 * K_Rad2U), (INT)(roll_1 * -K_Rad2U));
 }
-
+*/
 void UKarmaParamsCollision::execCalcContactRegion(FFrame& Stack, RESULT_DECL)
 {
 	guard(UKarmaParamsCollision::execCalcContactRegion);
@@ -59,7 +60,7 @@ void AActor::physKarma(FLOAT deltaTime)
 	clock(GStats.DWORDStats(GEngineStats.STATS_Karma_physKarma));
 
 	check(Physics == PHYS_Karma);
-
+	/*
 	if (!this->getKModel()) { return; }
 
 	dWorldID world = ((ODE_World*)this->GetLevel()->KWorld)->id;
@@ -89,6 +90,7 @@ void AActor::physKarma(FLOAT deltaTime)
 	level->FarMoveActor(this, { (FLOAT)CPos[0], (FLOAT)CPos[1], (FLOAT)CPos[2] }, 0, 0, 0);
 
 	unclock(GStats.DWORDStats(GEngineStats.STATS_Karma_physKarma));
+	*/
 	unguard;
 }
 

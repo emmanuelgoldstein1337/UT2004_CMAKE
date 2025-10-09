@@ -19,12 +19,40 @@ endif()
 option(PHYSICS_WRAPPER "Replase KARMA Physics engine" OFF)
 if (PHYSICS_WRAPPER)	
 	add_compile_definitions(WITH_PHYS_WRAP)
-    set(BUILD_SHARED_LIBS ON)
-    set(ODE_WITH_DEMOS OFF)
-    add_subdirectory(ODE)
+    
+    # PhysX
+    set( PHYSX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/PhysX )
 
-    #set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-    #set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+    set( PHYSX_ROOT_DIR ${PHYSX_PATH} ) #This is needed for $ENV{PHYSX_PATH}/compiler/public/CMakeLists.txt
+    set( PHYSX_INCLUDE_DIRS {PHYSX_PATH}/include/ {PHYSX_PATH}/../pxshared/include/ )
+    set( PHYSX_LIBRARIES
+          PhysXExtensions
+         PhysX
+         PhysXPvdSDK
+         PhysXVehicle
+         PhysXCharacterKinematic
+          PhysXCooking
+          PhysXCommon
+          PhysXFoundation
+           #SnippetUtils
+          )
+
+    set(TARGET_BUILD_PLATFORM "windows") # has to match the TARGET_BUILD_PLATFORM in $ENV{PHYSX_PATH}/physix/buildtools/cmake_generate_projects.py
+    set(PX_BUILDSNIPPETS OFF CACHE BOOL "Generate the snippets")
+    set(PX_BUILDPUBLICSAMPLES OFF CACHE BOOL "Generate the samples projects")
+    set(PX_GENERATE_STATIC_LIBRARIES OFF CACHE BOOL "Generate static libraries")
+    set(PX_FLOAT_POINT_PRECISE_MATH OFF CACHE BOOL "Float point precise math")
+    set(NV_USE_STATIC_WINCRT OFF CACHE BOOL "Use the statically linked windows CRT")
+    set(NV_USE_DEBUG_WINCRT ON CACHE BOOL "Use the debug version of the CRT")
+    set(PXSHARED_PATH ${PHYSX_PATH}/../pxshared)
+    set(PXSHARED_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+    set(CMAKEMODULES_VERSION "1.27")
+    set(CMAKEMODULES_PATH ${PHYSX_PATH}/../externals/cmakemodules)
+    set(PX_OUTPUT_LIB_DIR ${CMAKE_CURRENT_BINARY_DIR})
+    set(PX_OUTPUT_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
+add_subdirectory(${PHYSX_PATH}/compiler/public)
+include_directories(external/physx/physx/include)
 
 endif()
 
@@ -43,7 +71,7 @@ add_compile_definitions(
     ZLIB_DLL
     _WINDOWS
     _WIN32_IE=0x0200
-    NDEBUG
+    #NDEBUG
     WIN32
     _WINDLL
     _UNICODE
@@ -99,8 +127,8 @@ file(GLOB_RECURSE ENGINE_SRC ${PROJECT_SOURCE_DIR}/Engine/Src/*.cpp ${PROJECT_SO
 add_library(Engine SHARED ${ENGINE_SRC})
 add_dependencies(Engine Core)
 target_compile_definitions(Engine PRIVATE ENGINE_API=DLL_EXPORT)
-target_link_libraries(Engine PRIVATE System_Archive/Core ODE)
-target_include_directories(Engine PUBLIC Engine/Inc Core/Inc IFC/Inc ${ODE})
+target_link_libraries(Engine PRIVATE System_Archive/Core PhysX PhysXCommon PhysXFoundation PhysXCooking PhysXExtensions)
+target_include_directories(Engine PUBLIC Engine/Inc Core/Inc IFC/Inc PhysX/include)
 target_compile_options(Engine PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE FIRE_SRC ${PROJECT_SOURCE_DIR}/Fire/Src/*.cpp ${PROJECT_SOURCE_DIR}/Fire/Inc/*.h)

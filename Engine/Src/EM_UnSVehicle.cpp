@@ -93,7 +93,7 @@ static FMatrix RefMeshToWorld(USkeletalMesh* smesh)
 
 static void addODEWheels(ASVehicle* vehicle)
 {
-	
+	/*
 	ODE_PhysData* PhysData = (ODE_PhysData*)vehicle->KParams->KarmaData;
 	ULevel* level = vehicle->GetLevel();
 	ODE_World* world = (ODE_World*)level->KWorld;
@@ -147,7 +147,7 @@ static void addODEWheels(ASVehicle* vehicle)
 		dJointSetHinge2Param(joint_id, dParamLoStop, 0);
 		dJointSetHinge2Param(joint_id, dParamHiStop, 0);
 	}
-	
+	*/
 }
 
 void ASVehicle::PostBeginPlay()
