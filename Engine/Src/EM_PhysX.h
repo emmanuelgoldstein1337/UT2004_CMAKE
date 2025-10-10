@@ -3,24 +3,50 @@
 
 #include "EnginePrivate.h"
 
-typedef struct _PhysX_World
-{
-	physx::PxScene* Scene;
-} PhysX_World;
 
-/*
-/// ************ Some constants ************ ///
+
+/// ************* Some globals ************* ///
+
+static physx::PxDefaultAllocator	Allocator;
+static physx::PxDefaultErrorCallback	ErrorCallback;
+static physx::PxFoundation*	Foundation = NULL;
+static physx::PxPhysics*	Physics = NULL;
+static physx::PxDefaultCpuDispatcher*	Dispatcher = NULL;
+static physx::PxSceneDesc* SceneDesc;
+static physx::PxPvd* Pvd = NULL; // PhysX Visual Debugger
+static physx::PxPvdTransport* transport; // Debugger transport
+static physx::PxTolerancesScale TolerancesScale;
 
 /// *********** Internal structs *********** ///
 
-typedef struct _LevelPhysicsTriData
+typedef struct _PhysicsTriData
 {
-	TArray<dReal>		triangles;
-	TArray<dTriIndex>	indices;
-	dTriMeshDataID		TriMeshID;
-	dGeomID				TriMeshGeomID;
-} LevelPhysicsTriData;
+	TArray<physx::PxVec3>	triangles;
+	TArray<physx::PxU32>	indices;
 
+	//physx::PxTriangleMeshDesc	desc;
+	//physx::PxTriangleMesh *		mesh;
+	
+} PhysicsTriData;
+
+//
+typedef struct _PhysX_World
+{
+	physx::PxScene* Scene;
+	
+	PhysicsTriData BSP_Data;
+
+} PhysX_World;
+
+// Actor Physics Data
+typedef struct PhysData
+{
+	physx::PxMaterial* material;
+	physx::PxRigidDynamic* body; // Maybe we need physx::PxRigidActor instead
+
+} _PhysData;
+
+/*
 typedef struct _ODE_World
 {
 	dWorldID id = 0;
@@ -62,4 +88,8 @@ typedef struct _ODE_PhysData
 	}
 } ODE_PhysData;
 */
-/// *********** Support functions ********** ///
+
+/// ********** Internal functions ********** ///
+
+void PWAddBSPTrianglesPerSurf(UModel* model, PhysicsTriData* triData);
+physx::PxTriangleMesh* PWTrimeshFromTriData(PhysicsTriData* triData);

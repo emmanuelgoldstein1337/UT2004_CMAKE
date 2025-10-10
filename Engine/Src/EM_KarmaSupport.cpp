@@ -9,197 +9,20 @@
 
 #include "EM_PhysX.h"
 
-static physx::PxDefaultAllocator		gAllocator;
-static physx::PxDefaultErrorCallback	gErrorCallback;
-static physx::PxFoundation * Foundation = NULL;
-static physx::PxPhysics * Physics = NULL;
-static physx::PxDefaultCpuDispatcher * Dispatcher = NULL;
-static physx::PxSceneDesc * SceneDesc;
-//static physx::PxScene* gScene = NULL;
-//static physx::PxMaterial* gMaterial = NULL;
-static physx::PxPvd * Pvd = NULL; // PhysX Visual Debugger
-static physx::PxTolerancesScale TolerancesScale;
-
 static bool bODE_InitHasCallled;
 
-/// ********** Internal functions ********** ///
-
-/*
-static void PWAddBSPTrianglesPerSurf(UModel* model, LevelPhysicsTriData* triData) //CURRENT
-{
-	for (int i = 0; i < model->Points.Num(); i++) {
-		//FVector temp_vector = ((FVector*)model->Points.GetData())[i];
-		FVector temp_vector = model->Points(i);
-		triData->triangles.AddItem((dReal)temp_vector[0]);
-		triData->triangles.AddItem((dReal)temp_vector[1]);
-		triData->triangles.AddItem((dReal)temp_vector[2]);
-	}
-
-	for (int i = 0; i < model->Surfs.Num(); i++) {
-		FBspSurf* Surf = &model->Surfs(i);
-		if (!(Surf->PolyFlags & PF_NotSolid)) {
-			// Add Indices
-
-			for (int k = 0; k < model->Surfs(i).Nodes.Num(); k++) // !(Surf->PolyFlags & PF_NotSolid) // If there are any triangles to add.
-			{
-				FBspNode * TempNode = &model->Nodes(model->Surfs(i).Nodes(k));
-				int firstVertexIndex = model->Verts(TempNode->iVertPool).pVertex;
-				for (int j = 0; j < TempNode->NumVertices - 2; j++) // !(Surf->PolyFlags & PF_NotSolid) // If there are any triangles to add.
-				{
-					triData->indices.AddItem(firstVertexIndex);
-					triData->indices.AddItem(model->Verts(TempNode->iVertPool + j + 1).pVertex);
-					triData->indices.AddItem(model->Verts(TempNode->iVertPool + j + 2).pVertex);
-					
-				}
-			}
-		}
-	}
-}
-
-static dReal heightfield_callback(void * data, int x, int y)
-{
-
-	ATerrainInfo* tInfo = (ATerrainInfo *)data;
-	ODE_World* world = (ODE_World*)tInfo->GetLevel()->KWorld;
-	if (x >= tInfo->HeightmapX || y >= tInfo->HeightmapY) { appDebugBreak(); }
-
-	if (!tInfo->GetQuadVisibilityBitmap(x, y)) {
-		return -524288.0; // WE NEED TO DO SOMETHING WITH VISIBILITY
-	}
-
-	return (dReal)(world->heightfield_data[x + (tInfo->TerrainMap->USize - 1 - y) * tInfo->TerrainMap->USize] - 32768) * tInfo->TerrainScale.Z / 256;
-}
-
-static void PWAddTerrainHeightmap(ULevel* level, ODE_World * world)
-{
-	for (INT z = 0; z < 64; z++)
-	{
-		AZoneInfo* Z = level->GetZoneActor(z);
-		if (Z && Z->bTerrainZone)
-		{
-			for (INT t = 0; t < Z->Terrains.Num(); t++) {
-				ATerrainInfo* tInfo = Z->Terrains(t);
-				int TerrX = tInfo->HeightmapX;
-				int TerrY = tInfo->HeightmapY;
-				int ScaleX = tInfo->TerrainScale.X;
-				int ScaleY = tInfo->TerrainScale.Y;
-
-				// Get heightfield image from game
-				FStaticTexture StaticTexture(tInfo->TerrainMap);
-				if (tInfo->TerrainMap->Format == TEXF_G16) {
-					world->heightfield_data = (_WORD*)StaticTexture.GetRawTextureData(0);
-				}
-				else {
-					appDebugBreak(); // NOT IMPLEMENTED YET
-				}
-
-				// Heightfield creation
-				world->heightid = dGeomHeightfieldDataCreate();
-				dGeomHeightfieldDataBuildCallback(world->heightid, tInfo, heightfield_callback,
-					TerrX * tInfo->TerrainScale.X, // dReal width
-					TerrY * tInfo->TerrainScale.Y, //dReal depth
-					tInfo->HeightmapX -1, // int widthSamples ALERT!!! MAYBE WE NEED ADD -1 TO THIS
-					tInfo->HeightmapY -1, // int depthSamples
-					1.00 , REAL(0.0), REAL(0.0), 0); // dReal scale, dReal offset, dReal thickness, int bWrap
-
-				dGeomHeightfieldDataSetBounds(world->heightid, -32768, 32768);
-				dGeomID gheight = dCreateHeightfield(world->TER_Space, world->heightid, 1);
-				//Set it position	
-				dMatrix3 R; 
-				dRSetIdentity(R);
-				dRFromAxisAndAngle(R, 1, 0, 0, 0.01745329251994329577f * 90); // Rotate so Z is up, not Y (which is the default orientation)
-				dGeomSetRotation(gheight, R);
-				dGeomSetPosition(gheight, tInfo->Location.X, tInfo->Location.Y, tInfo->Location.Z);
-				return; // At this moment only single TerrainInfo will have ODE heightfield
-			}
-		}
-	}
-}
-static void nearCallback_space(void* level_ptr, dGeomID o1, dGeomID o2)
-{
-	ULevel* level = (ULevel*)level_ptr;
-	ODE_World* world = (ODE_World*)level->KWorld;
-
-	const int N = 32;
-	dContact contact[N];
-	int n = dCollide(o1, o2, N, &(contact[0].geom), sizeof(dContact));
-	if (n > 0)
-	{
-		for (int i = 0; i < n; i++)
-		{
-			contact[i].surface.slip1 = 0.7;
-			contact[i].surface.slip2 = 0.7;
-			contact[i].surface.mode = dContactBounce | dContactSoftCFM | dContactApprox1 | dContactSoftERP | dContactSlip1 | dContactSlip2 | dContactRolling; //dContactSoftERP | dContactSoftCFM | dContactApprox1 | dContactSlip1 | dContactSlip2;
-			contact[i].surface.mu = 0.1; // was: dInfinity
-			contact[i].surface.soft_erp = 1e-10;
-			contact[i].surface.soft_cfm = 1e-10;
-			contact[i].surface.bounce = 0.000001;
-			contact[i].surface.rho = 10.001;
-			contact[i].surface.rho2 = 10.001;
-			dJointID c = dJointCreateContact(world->id, world->contact_group, &contact[i]);
-			dJointAttach(c,
-				dGeomGetBody(contact[i].geom.g1),
-				dGeomGetBody(contact[i].geom.g2));
-		}
-	}
-}
-
-static void nearCallback(void* level_ptr, dGeomID o1, dGeomID o2)
-{
-	ULevel* level = (ULevel*)level_ptr;
-	ODE_World* world = (ODE_World*)level->KWorld;
-
-	if (dGeomIsSpace(o1) && dGeomIsSpace(o2)) {
-		return;
-	}
-
-	if(dGeomGetBody)
-	if (dGeomIsSpace(o1) || dGeomIsSpace(o2))
-	{
-		fprintf(stderr, "testing space %p %p\n", (void*)o1, (void*)o2);
-		// colliding a space with something
-		dSpaceCollide2(o1, o2, level_ptr, &nearCallback_space);
-		// Note we do not want to test intersections within a space,
-		// only between spaces.
-		return;
-	}
-
-	//  fprintf(stderr,"testing geoms %p %p\n", o1, o2);
-
-	const int N = 32;
-	dContact contact[N];
-	int n = dCollide(o1, o2, N, &(contact[0].geom), sizeof(dContact));
-	if (n > 0)
-	{
-		for (int i = 0; i < n; i++)
-		{
-			contact[i].surface.slip1 = 0.7;
-			contact[i].surface.slip2 = 0.7;
-			contact[i].surface.mode = dContactBounce | dContactSoftCFM | dContactSoftERP | dContactApprox1 | dContactSlip1 | dContactSlip2 | dContactRolling; //dContactSoftERP | dContactSoftCFM | dContactApprox1 | dContactSlip1 | dContactSlip2;
-			contact[i].surface.mu = 0.1; // was: dInfinity
-			contact[i].surface.soft_erp = 1e-10;
-			contact[i].surface.soft_cfm = 1e-10;
-			contact[i].surface.bounce = 0.000001;
-			dJointID c = dJointCreateContact(world->id, world->contact_group, &contact[i]);
-			dJointAttach(c,
-				dGeomGetBody(contact[i].geom.g1),
-				dGeomGetBody(contact[i].geom.g2));
-		}
-	}
-}
-*/
 void KInitGameKarma() // (1)
 {
     guard(KInitGameKarma);
 		
 		// PhysX
-		Foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+		Foundation = PxCreateFoundation(PX_PHYSICS_VERSION, Allocator, ErrorCallback);
 		
 		// Debugging
 		Pvd = physx::PxCreatePvd(*Foundation);
-		physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
+		transport = physx::PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
 		Pvd->connect(*transport, physx::PxPvdInstrumentationFlag::eALL);
-		
+
 		// Unit scale
 		TolerancesScale.length = 100;
 		TolerancesScale.speed = 950;
@@ -223,6 +46,12 @@ void ENGINE_API KTermGameKarma()
 	guard(KTermGameKarma);
 
 		bODE_InitHasCallled = false;
+
+		//Debugger
+		//physx::PxPvdTransport* transport = Pvd->getTransport();
+		//Pvd->release();
+		//transport->release();
+
 	unguard;
 }
 
@@ -231,12 +60,15 @@ void KInitLevelKarma(ULevel* level)
 {
     guard(KInitLevelKarma);
 
-	level->KWorld = new PhysX_World;
-	PhysX_World* World = (PhysX_World*)level->KWorld;
-	
-	World->Scene = Physics->createScene(*SceneDesc);
+	// Debugger
+	//transport->connect();
 
-	physx::PxPvdSceneClient* PvdClient = World->Scene->getScenePvdClient();
+	level->KWorld = new PhysX_World;
+	PhysX_World* world = (PhysX_World*)level->KWorld;
+	
+	world->Scene = Physics->createScene(*SceneDesc);
+
+	physx::PxPvdSceneClient* PvdClient = world->Scene->getScenePvdClient();
 	if (PvdClient)
 	{
 		PvdClient->setScenePvdFlag(physx::PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
@@ -245,14 +77,25 @@ void KInitLevelKarma(ULevel* level)
 	}
 
 	// create simulation
-	physx::PxMaterial * Material = Physics->createMaterial(0.5f, 0.5f, 0.6f);
-	physx::PxRigidStatic* groundPlane = PxCreatePlane(*Physics, physx::PxPlane(0, 1, 0, 50), *Material);
-	World->Scene->addActor(*groundPlane);
+	//physx::PxMaterial * Material = Physics->createMaterial(0.5f, 0.5f, 0.6f);
+	//physx::PxRigidStatic* groundPlane = PxCreatePlane(*Physics, physx::PxPlane(0, 1, 0, 50), *Material);
+	//world->Scene->addActor(*groundPlane);
+	
+	//physx::PxRigidStatic* sphere = physx::PxCreateStatic(*Physics, physx::PxTransform(physx::PxVec3(0, 0, 0)), physx::PxSphereGeometry(128), *Material);
+	//physx::PxRigidDynamic* sphere = physx::PxCreateDynamic(*Physics, physx::PxTransform(physx::PxVec3(0, 0, 0)), physx::PxSphereGeometry(128), *Material, 1);
+	//world->Scene->addActor(*sphere);
 
+	// Now we add static level collision into arrays
+	PWAddBSPTrianglesPerSurf(level->Model, &world->BSP_Data);
+	//PWAddTerrainHeightmap(level, world);
 
+	// Add Level BSP Geometry to PhysX
+	physx::PxMaterial* Material = Physics->createMaterial(0.5f, 0.5f, 0.6f); // REMOVE THIS
+	physx::PxRigidStatic* meshActor = physx::PxCreateStatic(*Physics, physx::PxTransform(physx::PxVec3(0, 0, 0)), physx::PxTriangleMeshGeometry(PWTrimeshFromTriData(&world->BSP_Data)), *Material);
+	world->Scene->addActor(*meshActor);
+
+	//world->Scene->addActor(*loh);
 	/*
-
-
 	//world->BSP_Data = new LevelPhysicsTriData;
 	world->id = dWorldCreate();
 	dWorldSetGravity(world->id, gx, gy, gz); //relocate // x, y, z
@@ -272,9 +115,6 @@ void KInitLevelKarma(ULevel* level)
 	dHashSpaceSetLevels(world->SM_Space, 1, 12);
 	world->contact_group = dJointGroupCreate(0); // Contact group
 	
-	// Now we add static level collision into arrays
-	PWAddBSPTrianglesPerSurf(level->Model, &world->BSP_Data);
-	PWAddTerrainHeightmap(level, world);
 
 	world->BSP_Data.TriMeshID = dGeomTriMeshDataCreate();
 	dGeomTriMeshDataBuildDouble(world->BSP_Data.TriMeshID,
@@ -294,6 +134,18 @@ void KInitLevelKarma(ULevel* level)
 void KTermLevelKarma(ULevel* level) // Warning : At the game exit functions KTermGameKarma and KTermLevelKarma called in reverse order
 {
 	if (!bODE_InitHasCallled) { return; } //do nothing if game exit;
+	
+	//transport->disconnect();
+
+	PhysX_World* world = (PhysX_World*)level->KWorld;
+
+	world->Scene->release();
+	world->Scene = NULL;
+
+	delete(level->KWorld);
+	level->KWorld = NULL;
+
+
 
 	/*
 	ODE_World* world = (ODE_World*)level->KWorld;
@@ -436,6 +288,10 @@ void KTermActorKarma(AActor* actor) //1280
 
 void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 {
+
+	actor->KParams->KarmaData = (PTRINT) new PhysData;
+	PhysData* PhData = (PhysData*)actor->KParams->KarmaData;
+
 	/*
 	FVector scale3D = actor->DrawScale * actor->DrawScale3D;
 
@@ -503,11 +359,11 @@ void KInitActorDynamics(AActor* actor)
 
 	if (actor->bDeleteMe)
 		return;
-	/*
+
 	ULevel* level = actor->GetLevel();
 	UKMeshProps* MeshProps = 0;
-	ODE_World* world = (ODE_World*)level->KWorld;
-	ODE_PhysData* PhysData = (ODE_PhysData*)actor->KParams->KarmaData;
+	PhysData* PhData = (PhysData *)actor->KParams->KarmaData;
+	PhysX_World* world = (PhysX_World*)level->KWorld;
 
 	if (GIsEditor || !level || actor->bDeleteMe)
 		return;
@@ -515,6 +371,11 @@ void KInitActorDynamics(AActor* actor)
 	if (actor->bStatic)
 		debugf(TEXT("(ODE): KInitActorDynamics: bStatic is true."));
 
+	PhData->material = Physics->createMaterial(0.5f, 0.5f, 0.6f);
+	physx::PxRigidDynamic* sphere = physx::PxCreateDynamic(*Physics, physx::PxTransform(physx::PxVec3(actor->Location[0], actor->Location[1], actor->Location[2])), physx::PxSphereGeometry(128), *PhData->material, 1);
+	world->Scene->addActor(*sphere);
+
+	/*
 	PhysData->id = dBodyCreate(world->id);
 	dGeomSetBody(PhysData->geometry, PhysData->id);
 
