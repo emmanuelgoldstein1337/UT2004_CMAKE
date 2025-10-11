@@ -47,3 +47,39 @@ physx::PxTriangleMesh* PWTrimeshFromTriData(PhysicsTriData* triData)
 	desc.triangles.stride = 3 * sizeof(physx::PxU32);
 	return PxCreateTriangleMesh(params, desc);
 }
+
+physx::PxConvexMesh* PWConvexFromTriData(PhysicsTriData* triData)
+{
+	physx::PxCookingParams params(TolerancesScale);
+	params.convexMeshCookingType = physx::PxConvexMeshCookingType::eQUICKHULL;
+	params.gaussMapLimit = 256;
+
+	// Setup the convex mesh descriptor
+	physx::PxConvexMeshDesc desc;
+
+	desc.points.count = triData->triangles.Num();
+	desc.points.data = triData->triangles.GetData();
+	desc.points.stride = sizeof(physx::PxVec3);
+	desc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
+
+	physx::PxConvexMesh* convex = NULL;
+
+	// Directly insert mesh into PhysX
+	convex = PxCreateConvexMesh(params, desc, Physics->getPhysicsInsertionCallback());
+	PX_ASSERT(convex);
+	
+	/*
+	// Serialize the cooked mesh into a stream.
+	physx::PxDefaultMemoryOutputStream outStream;
+	bool res = PxCookConvexMesh(params, desc, outStream);
+	PX_UNUSED(res);
+	PX_ASSERT(res);
+	//meshSize = outStream.getSize();
+
+	// Create the mesh from a stream.
+	physx::PxDefaultMemoryInputData inStream(outStream.getData(), outStream.getSize());
+	convex = Physics->createConvexMesh(inStream);
+	PX_ASSERT(convex);
+	*/
+	return convex; //PxCreateTriangleMesh(params, desc);
+}

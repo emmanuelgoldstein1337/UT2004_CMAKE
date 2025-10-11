@@ -7,15 +7,15 @@
 
 /// ************* Some globals ************* ///
 
-static physx::PxDefaultAllocator	Allocator;
-static physx::PxDefaultErrorCallback	ErrorCallback;
-static physx::PxFoundation*	Foundation = NULL;
-static physx::PxPhysics*	Physics = NULL;
-static physx::PxDefaultCpuDispatcher*	Dispatcher = NULL;
-static physx::PxSceneDesc* SceneDesc;
-static physx::PxPvd* Pvd = NULL; // PhysX Visual Debugger
-static physx::PxPvdTransport* transport; // Debugger transport
-static physx::PxTolerancesScale TolerancesScale;
+extern physx::PxDefaultAllocator	Allocator;
+extern physx::PxDefaultErrorCallback	ErrorCallback;
+extern physx::PxFoundation*	Foundation;
+extern physx::PxPhysics*	Physics;
+extern physx::PxDefaultCpuDispatcher*	Dispatcher;
+extern physx::PxSceneDesc* SceneDesc;
+extern physx::PxPvd* Pvd; // PhysX Visual Debugger
+extern physx::PxPvdTransport* transport; // Debugger transport
+extern physx::PxTolerancesScale TolerancesScale;
 
 /// *********** Internal structs *********** ///
 
@@ -41,8 +41,10 @@ typedef struct _PhysX_World
 // Actor Physics Data
 typedef struct PhysData
 {
+	PhysicsTriData trimesh;
+
 	physx::PxMaterial* material;
-	physx::PxRigidDynamic* body; // Maybe we need physx::PxRigidActor instead
+	physx::PxActor* body;//
 
 } _PhysData;
 
@@ -93,3 +95,4 @@ typedef struct _ODE_PhysData
 
 void PWAddBSPTrianglesPerSurf(UModel* model, PhysicsTriData* triData);
 physx::PxTriangleMesh* PWTrimeshFromTriData(PhysicsTriData* triData);
+physx::PxConvexMesh* PWConvexFromTriData(PhysicsTriData* triData);

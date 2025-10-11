@@ -51,7 +51,6 @@ void * AActor::getKModel() const
 		return 0;
 
 	return (void *)KParams->KarmaData;
-	//return ((ODE_PhysData*)KParams->KarmaData)->id;//PTRINT
 }
 
 void AActor::physKarma(FLOAT deltaTime)
@@ -60,8 +59,23 @@ void AActor::physKarma(FLOAT deltaTime)
 	clock(GStats.DWORDStats(GEngineStats.STATS_Karma_physKarma));
 
 	check(Physics == PHYS_Karma);
+
+	PhysData* model = (PhysData*)this->getKModel();
+
+	if (!model) {
+		return; 
+	}
+
+	physx::PxTransform transform = model->body->is<physx::PxRigidActor>()->getGlobalPose();
+	physx::PxVec3 location = transform.p;
+	physx::PxQuat rotation = transform.q;
+	
+	ULevel* level = GetLevel();
+	level->FarMoveActor(this, { (FLOAT)location.x, (FLOAT)location.y, (FLOAT)location.z }, rotation.x, rotation.y, rotation.z);
+
+	
 	/*
-	if (!this->getKModel()) { return; }
+	
 
 	dWorldID world = ((ODE_World*)this->GetLevel()->KWorld)->id;
 	if (!world)
@@ -82,12 +96,12 @@ void AActor::physKarma(FLOAT deltaTime)
 	FKRigidBodyState newState;
 	eventKUpdateState(newState);
 
-	ULevel* level = GetLevel();
+	
 	const dReal * CPos = dBodyGetPosition(model);
 	const dReal * CRot = dBodyGetRotation(model); // 0,2, 3?, 5, 7?,8 10, 11; // 0 5 10
 
 	this->Rotation = RotatorFromMatrix(CRot);
-	level->FarMoveActor(this, { (FLOAT)CPos[0], (FLOAT)CPos[1], (FLOAT)CPos[2] }, 0, 0, 0);
+	
 
 	unclock(GStats.DWORDStats(GEngineStats.STATS_Karma_physKarma));
 	*/

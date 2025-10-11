@@ -9,6 +9,18 @@
 
 #include "EM_PhysX.h"
 
+/// ************* Some globals ************* ///
+
+physx::PxDefaultAllocator	Allocator;
+physx::PxDefaultErrorCallback	ErrorCallback;
+physx::PxFoundation* Foundation = NULL;
+physx::PxPhysics* Physics;
+physx::PxDefaultCpuDispatcher* Dispatcher = NULL;
+physx::PxSceneDesc* SceneDesc;
+physx::PxPvd* Pvd = NULL; // PhysX Visual Debugger
+physx::PxPvdTransport* transport; // Debugger transport
+physx::PxTolerancesScale TolerancesScale;
+
 static bool bODE_InitHasCallled;
 
 void KInitGameKarma() // (1)
@@ -289,45 +301,48 @@ void KTermActorKarma(AActor* actor) //1280
 void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 {
 
-	actor->KParams->KarmaData = (PTRINT) new PhysData;
+	actor->KParams->KarmaData = (PTRINT) new PhysData; ///TODO: DONT FORGET TO FREE IT
 	PhysData* PhData = (PhysData*)actor->KParams->KarmaData;
 
-	/*
 	FVector scale3D = actor->DrawScale * actor->DrawScale3D;
-
 	ULevel* level = actor->GetLevel();
-	ODE_World* world = (ODE_World*)level->KWorld;
 
-	actor->KParams->KarmaData = (PTRINT) new ODE_PhysData; ///TODO: DONT FORGET TO FREE IT
-	ODE_PhysData* PhysData = (ODE_PhysData*)actor->KParams->KarmaData;
+	PhysX_World* world = (PhysX_World*)level->KWorld;
 
 	// Static Mesh
 	if (actor->StaticMesh) {
 		// Add triangles
 		for (int i = 0; i < actor->StaticMesh->VertexStream.Vertices.Num(); i++) {
-			PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.X * scale3D.X));
-			PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.Y * scale3D.Y));
-			PhysData->triangles.AddItem((dReal)(actor->StaticMesh->VertexStream.Vertices(i).Position.Z * scale3D.Z));
+			physx::PxVec3 temp_v;
+			temp_v.x = actor->StaticMesh->VertexStream.Vertices(i).Position.X * scale3D.X;
+			temp_v.y = actor->StaticMesh->VertexStream.Vertices(i).Position.Y * scale3D.Y;
+			temp_v.z = actor->StaticMesh->VertexStream.Vertices(i).Position.Z * scale3D.Z;
+			PhData->trimesh.triangles.AddItem(temp_v);
 		}
 		// Add indices
-		for (int i = 0; i < actor->StaticMesh->IndexBuffer.Indices.Num(); i += 3) {
-			PhysData->indices.AddItem((dTriIndex)actor->StaticMesh->IndexBuffer.Indices(i));
-			PhysData->indices.AddItem((dTriIndex)actor->StaticMesh->IndexBuffer.Indices(i + 2));
-			PhysData->indices.AddItem((dTriIndex)actor->StaticMesh->IndexBuffer.Indices(i + 1));
+		for (int i = 0; i < actor->StaticMesh->IndexBuffer.Indices.Num(); i+=3) {
+			PhData->trimesh.indices.AddItem((physx::PxU32)actor->StaticMesh->IndexBuffer.Indices(i));
+			PhData->trimesh.indices.AddItem((physx::PxU32)actor->StaticMesh->IndexBuffer.Indices(i + 2));
+			PhData->trimesh.indices.AddItem((physx::PxU32)actor->StaticMesh->IndexBuffer.Indices(i + 1));
 		}
 
-		PhysData->TriMeshID = dGeomTriMeshDataCreate();
-		dGeomTriMeshDataBuildDouble(PhysData->TriMeshID, PhysData->triangles.GetData(), 3 * sizeof(dReal), PhysData->triangles.Num() / 3, PhysData->indices.GetData(), PhysData->indices.Num(), 3 * sizeof(dTriIndex));
+		//PhysData->TriMeshID = dGeomTriMeshDataCreate();
+		//dGeomTriMeshDataBuildDouble(PhysData->TriMeshID, PhysData->triangles.GetData(), 3 * sizeof(dReal), PhysData->triangles.Num() / 3, PhysData->indices.GetData(), PhysData->indices.Num(), 3 * sizeof(dTriIndex));
 		//dGeomTriMeshDataPreprocess2(PhysData->TriMeshID, (1U << dTRIDATAPREPROCESS_BUILD__MIN), NULL);
-		PhysData->geometry = dCreateTriMesh(world->SM_Space, PhysData->TriMeshID, 0, 0, 0);
+		//PhysData->geometry = dCreateTriMesh(world->SM_Space, PhysData->TriMeshID, 0, 0, 0);
 	}
+	
 	// Skeletar Mesh
 	if (actor->Mesh) {
 		//PhysData->geometry = dCreateSphere(world->SM_Space, 128);
 		USkeletalMesh* smesh = Cast<USkeletalMesh>(actor->Mesh);
-		PhysData->geometry = dCreateBox(world->SM_Space, (dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).X * K_ME2UScale,
-			(dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Y * K_ME2UScale, (dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Z * K_ME2UScale);
+		//PhysData->geometry = dCreateBox(world->SM_Space, (dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).X * K_ME2UScale,
+			//(dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Y * K_ME2UScale, (dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Z * K_ME2UScale);
 	}
+	/*
+	
+	}
+
 
 	//Set position of the geom
 	dGeomSetPosition(PhysData->geometry, static_cast<dReal>(actor->Location[0]), static_cast<dReal>(actor->Location[1]), static_cast<dReal>(actor->Location[2]));
@@ -369,12 +384,13 @@ void KInitActorDynamics(AActor* actor)
 		return;
 
 	if (actor->bStatic)
-		debugf(TEXT("(ODE): KInitActorDynamics: bStatic is true."));
+		debugf(TEXT("(PhysX): KInitActorDynamics: bStatic is true."));
 
 	PhData->material = Physics->createMaterial(0.5f, 0.5f, 0.6f);
-	physx::PxRigidDynamic* sphere = physx::PxCreateDynamic(*Physics, physx::PxTransform(physx::PxVec3(actor->Location[0], actor->Location[1], actor->Location[2])), physx::PxSphereGeometry(128), *PhData->material, 1);
-	world->Scene->addActor(*sphere);
+	PhData->body = physx::PxCreateDynamic(*Physics, physx::PxTransform(physx::PxVec3(0, 0, 0)), physx::PxConvexMeshGeometry(PWConvexFromTriData(&PhData->trimesh)), *PhData->material, 1.0);
+	world->Scene->addActor(*PhData->body);
 
+	//physx::PxRigid
 	/*
 	PhysData->id = dBodyCreate(world->id);
 	dGeomSetBody(PhysData->geometry, PhysData->id);
