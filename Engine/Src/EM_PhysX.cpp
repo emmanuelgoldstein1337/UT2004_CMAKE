@@ -31,10 +31,74 @@ void PWAddBSPTrianglesPerSurf(UModel* model, PhysicsTriData* triData)
 	}
 }
 
+static void PWAddTerrainVertices(ATerrainInfo* tInfo, PhysicsTriData* TerrainData)
+{
+	for (int i = 0; i < tInfo->Vertices.Num(); i++)
+	{
+		physx::PxVec3 vertex;
+		vertex.x = tInfo->Vertices(i).X;
+		vertex.y = tInfo->Vertices(i).Y;
+		vertex.z = tInfo->Vertices(i).Z;
+		TerrainData->triangles.AddItem(vertex);
+	}
+
+	int hy = tInfo->HeightmapY;
+	int hx = tInfo->HeightmapX;
+	for (int iy = 0; iy < hy-1; iy++) {
+		for (int ix = 0; ix < hx-1; ix++)
+		{
+			TerrainData->indices.AddItem(ix + iy * hy);
+			TerrainData->indices.AddItem(ix + iy * hy + 1 );
+			TerrainData->indices.AddItem(ix + iy * hy + hy);
+			TerrainData->indices.AddItem(ix + iy * hy + hy);
+			TerrainData->indices.AddItem(ix + iy * hy + 1);
+			TerrainData->indices.AddItem(ix + iy * hy + hy + 1);
+		}
+	}
+}
+
+void PWAddTerrainTriangles(ULevel* level, PhysicsTriData* TerrainData)
+{
+	for (INT z = 0; z < 64; z++)
+	{
+		AZoneInfo* Z = level->GetZoneActor(z);
+		if (Z && Z->bTerrainZone)
+		{
+			for (INT t = 0; t < Z->Terrains.Num(); t++)
+			{
+				ATerrainInfo* tInfo = Z->Terrains(t);
+				PWAddTerrainVertices(tInfo, TerrainData);
+				break; // DELETE THIS
+			}
+		}
+	}
+}
+
+// COOKING
 physx::PxTriangleMesh* PWTrimeshFromTriData(PhysicsTriData* triData)
 {
 	physx::PxCookingParams params(TolerancesScale);
 	params.midphaseDesc.setToDefault(physx::PxMeshMidPhase::eBVH34);
+	params.meshPreprocessParams |= physx::PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
+	params.meshPreprocessParams |= physx::PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH;
+	
+	physx::PxTriangleMeshDesc	desc;
+	desc.points.count = triData->triangles.Num();
+	desc.points.data = triData->triangles.GetData();
+	desc.points.stride = sizeof(physx::PxVec3);
+	desc.triangles.count = triData->indices.Num() / 3;
+	desc.triangles.data = triData->indices.GetData();
+	desc.triangles.stride = 3 * sizeof(physx::PxU32);
+	return PxCreateTriangleMesh(params, desc);
+}
+
+physx::PxTriangleMesh* PW_TerrainTrimeshFromTriData(PhysicsTriData* triData)
+{
+	physx::PxCookingParams params(TolerancesScale);
+	params.midphaseDesc.setToDefault(physx::PxMeshMidPhase::eBVH34);
+	//params.meshPreprocessParams |= physx::PxMeshPreprocessingFlag::eENABLE_VERT_MAPPING;
+	//params.meshPreprocessParams |= physx::PxMeshPreprocessingFlag::eWELD_VERTICES;
+	//params.meshPreprocessParams |= physx::PxMeshPreprocessingFlag::eFORCE_32BIT_INDICES;
 	params.meshPreprocessParams |= physx::PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
 	params.meshPreprocessParams |= physx::PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH;
 

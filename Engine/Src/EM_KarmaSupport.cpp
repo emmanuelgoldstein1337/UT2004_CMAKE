@@ -96,7 +96,17 @@ void KInitLevelKarma(ULevel* level)
 
 	// Now we add static level collision into arrays
 	PWAddBSPTrianglesPerSurf(level->Model, &world->BSP_Data);
-	//PWAddTerrainHeightmap(level, world);
+	//Terrain
+	PWAddTerrainTriangles(level, &world->TerrainData);
+	if (world->TerrainData.triangles.Num() > 0) {
+		physx::PxTriangleMesh* trimesh = PW_TerrainTrimeshFromTriData(&world->TerrainData);
+		physx::PxMaterial* TerrainMaterial = Physics->createMaterial(0.5f, 0.5f, 0.1f); // REMOVE THIS
+		physx::PxRigidStatic* TerrainMesh = physx::PxCreateStatic(*Physics, physx::PxTransform(physx::PxVec3(0, 0, 0)), physx::PxTriangleMeshGeometry(trimesh), *TerrainMaterial);
+		world->Scene->addActor(*TerrainMesh);
+		world->TerrainData.triangles.Empty();
+		world->TerrainData.indices.Empty();
+	}
+
 
 	// Add Level BSP Geometry to PhysX
 	physx::PxMaterial* Material = Physics->createMaterial(0.5f, 0.5f, 0.1f); // REMOVE THIS
@@ -240,13 +250,13 @@ void KInitActorKarma(AActor* actor) //1161
 		// Then initialise Karma dynamics.
 		KInitActorDynamics(actor);
 	}
-    unguard;
+	unguard;
 }
 
 /* Terminate all dynamics and collision for an Actor. */
 void KTermActorKarma(AActor* actor) //1280
 {
-    guard(KTermActorKarma);
+	guard(KTermActorKarma);
 
 	/* *** OTHER ACTOR *** */
 	if (actor->getKModel())
@@ -258,7 +268,7 @@ void KTermActorKarma(AActor* actor) //1280
 		KTermActorCollision(actor);
 		return;
 	}
-    unguard;
+	unguard;
 }
 
 void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
@@ -283,7 +293,7 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 			PhData->trimesh.triangles.AddItem(temp_v);
 		}
 		// Add indices
-		for (int i = 0; i < actor->StaticMesh->IndexBuffer.Indices.Num(); i+=3) {
+		for (int i = 0; i < actor->StaticMesh->IndexBuffer.Indices.Num(); i += 3) {
 			PhData->trimesh.indices.AddItem((physx::PxU32)actor->StaticMesh->IndexBuffer.Indices(i));
 			PhData->trimesh.indices.AddItem((physx::PxU32)actor->StaticMesh->IndexBuffer.Indices(i + 2));
 			PhData->trimesh.indices.AddItem((physx::PxU32)actor->StaticMesh->IndexBuffer.Indices(i + 1));
@@ -294,7 +304,7 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 		//dGeomTriMeshDataPreprocess2(PhysData->TriMeshID, (1U << dTRIDATAPREPROCESS_BUILD__MIN), NULL);
 		//PhysData->geometry = dCreateTriMesh(world->SM_Space, PhysData->TriMeshID, 0, 0, 0);
 	}
-	
+
 	// Skeletar Mesh
 	if (actor->Mesh) {
 		//PhysData->geometry = dCreateSphere(world->SM_Space, 128);
@@ -303,7 +313,7 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 			//(dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Y * K_ME2UScale, (dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Z * K_ME2UScale);
 	}
 	/*
-	
+
 	}
 
 
@@ -331,11 +341,14 @@ void KTermActorCollision(AActor* actor)
 	unguard;
 }
 
-void KInitActorDynamics(AActor* actor) 
+void KInitActorDynamics(AActor* actor)
 {
 	guard(KInitActorDynamics);
 
 	if (actor->bDeleteMe)
+		return;
+
+	if (!actor->StaticMesh)
 		return;
 
 	ULevel* level = actor->GetLevel();

@@ -35,7 +35,7 @@ typedef struct _PhysX_World
 	physx::PxScene* Scene;
 	
 	PhysicsTriData BSP_Data;
-
+	PhysicsTriData TerrainData;
 } PhysX_World;
 
 // Actor Physics Data
@@ -94,5 +94,8 @@ typedef struct _ODE_PhysData
 /// ********** Internal functions ********** ///
 
 void PWAddBSPTrianglesPerSurf(UModel* model, PhysicsTriData* triData);
+void PWAddTerrainTriangles(ULevel* level, PhysicsTriData* TerrainData);
+
 physx::PxTriangleMesh* PWTrimeshFromTriData(PhysicsTriData* triData);
+physx::PxTriangleMesh* PW_TerrainTrimeshFromTriData(PhysicsTriData* triData);
 physx::PxConvexMesh* PWConvexFromTriData(PhysicsTriData* triData);

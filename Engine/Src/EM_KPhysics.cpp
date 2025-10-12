@@ -40,6 +40,9 @@ void AActor::physKarma(FLOAT deltaTime)
 		return; 
 	}
 
+	if (!StaticMesh) //DELETE ME
+		return;
+
 	physx::PxTransform transform = model->body->is<physx::PxRigidActor>()->getGlobalPose();
 	physx::PxVec3 location = transform.p;
 
