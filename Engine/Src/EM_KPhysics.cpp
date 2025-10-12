@@ -6,33 +6,7 @@ void AActor::KWake() {}
 
 void AActor::preKarmaStep(FLOAT DeltaTime) {} //559
 
-// Gets ODE rotation matrix and return rotation in Unreal units
-/*
-FRotator RotatorFromMatrix(const dReal* R)
-{
-	dReal pitch_1, pitch_2, roll_1, roll_2, yaw_1, yaw_2;
-	if (R[8] != 1.0 && R[8] != -1.0) {
-		pitch_1 = -1 * asin(R[8]);
-		pitch_2 = PI - pitch_1;
-		roll_1 = atan2(R[9] / cos(pitch_1), R[10] / cos(pitch_1));
-		roll_2 = atan2(R[9] / cos(pitch_2), R[10] / cos(pitch_2));
-		yaw_1 = atan2(R[4] / cos(pitch_1), R[0] / cos(pitch_1));
-		yaw_2 = atan2(R[4] / cos(pitch_2), R[0] / cos(pitch_2));
-	}
-	else {
-		yaw_1 = 0;
-		if (R[8] == -1.0) {
-			pitch_1 = PI / 2;
-			roll_1 = yaw_1 + atan2(R[1], R[2]);
-		}
-		else {
-			pitch_1 = -PI / 2;
-			roll_1 = -1 * yaw_1 + atan2(-1 * R[1], -1 * R[2]);
-		}
-	}
-	return FRotator((INT)(pitch_1 * -K_Rad2U), (INT)(yaw_1 * K_Rad2U), (INT)(roll_1 * -K_Rad2U));
-}
-*/
+
 void UKarmaParamsCollision::execCalcContactRegion(FFrame& Stack, RESULT_DECL)
 {
 	guard(UKarmaParamsCollision::execCalcContactRegion);
@@ -68,12 +42,19 @@ void AActor::physKarma(FLOAT deltaTime)
 
 	physx::PxTransform transform = model->body->is<physx::PxRigidActor>()->getGlobalPose();
 	physx::PxVec3 location = transform.p;
-	physx::PxQuat rotation = transform.q;
-	
-	ULevel* level = GetLevel();
-	level->FarMoveActor(this, { (FLOAT)location.x, (FLOAT)location.y, (FLOAT)location.z }, rotation.x, rotation.y, rotation.z);
 
+	//Rotation
+	physx::PxMat44 tm = physx::PxMat44(transform.getNormalized());
+	FCoords cords = FCoords(
+		FVector(tm[3][0], tm[3][1], tm[3][2]),
+		FVector(tm[0][0], tm[0][1], tm[0][2]),
+		FVector(tm[1][0], tm[1][1], tm[1][2]),
+		FVector(tm[2][0], tm[2][1], tm[2][2]));
+	Rotation = cords.OrthoRotation();
+
+	ULevel* level = GetLevel();
 	
+	level->FarMoveActor(this, { (FLOAT)location.x, (FLOAT)location.y, (FLOAT)location.z });
 	/*
 	
 

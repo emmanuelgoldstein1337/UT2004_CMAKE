@@ -36,8 +36,8 @@ void KInitGameKarma() // (1)
 		Pvd->connect(*transport, physx::PxPvdInstrumentationFlag::eALL);
 
 		// Unit scale
-		TolerancesScale.length = 100;
-		TolerancesScale.speed = 950;
+		TolerancesScale.length = K_ME2UScale;
+		TolerancesScale.speed = 1;
 
 		// Create physics
 		Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *Foundation, TolerancesScale, true, Pvd);
@@ -72,9 +72,6 @@ void KInitLevelKarma(ULevel* level)
 {
     guard(KInitLevelKarma);
 
-	// Debugger
-	//transport->connect();
-
 	level->KWorld = new PhysX_World;
 	PhysX_World* world = (PhysX_World*)level->KWorld;
 	
@@ -102,44 +99,10 @@ void KInitLevelKarma(ULevel* level)
 	//PWAddTerrainHeightmap(level, world);
 
 	// Add Level BSP Geometry to PhysX
-	physx::PxMaterial* Material = Physics->createMaterial(0.5f, 0.5f, 0.6f); // REMOVE THIS
+	physx::PxMaterial* Material = Physics->createMaterial(0.5f, 0.5f, 0.1f); // REMOVE THIS
 	physx::PxRigidStatic* meshActor = physx::PxCreateStatic(*Physics, physx::PxTransform(physx::PxVec3(0, 0, 0)), physx::PxTriangleMeshGeometry(PWTrimeshFromTriData(&world->BSP_Data)), *Material);
 	world->Scene->addActor(*meshActor);
 
-	//world->Scene->addActor(*loh);
-	/*
-	//world->BSP_Data = new LevelPhysicsTriData;
-	world->id = dWorldCreate();
-	dWorldSetGravity(world->id, gx, gy, gz); //relocate // x, y, z
-	dWorldSetQuickStepNumIterations(world->id, 512); // <-- increase for more stability
-	//dWorldSetAutoDisableFlag((dWorldID)level->KWorld, 0);
-	//dWorldSetAutoDisableAverageSamplesCount((dWorldID)level->KWorld, 0);
-	dReal CFM = 0;  //0.8;// 1e-10;
-	dWorldSetCFM(world->id, CFM);
-	
-	world->KA_Space = dHashSpaceCreate(0);
-	world->BSP_Space = dHashSpaceCreate(world->KA_Space);
-	world->SM_Space = dHashSpaceCreate(world->KA_Space);
-	world->TER_Space = dHashSpaceCreate(world->KA_Space);
-	dHashSpaceSetLevels(world->TER_Space, 1, 12);
-	dHashSpaceSetLevels(world->KA_Space, 1, 12);
-	dHashSpaceSetLevels(world->BSP_Space, 1, 12);
-	dHashSpaceSetLevels(world->SM_Space, 1, 12);
-	world->contact_group = dJointGroupCreate(0); // Contact group
-	
-
-	world->BSP_Data.TriMeshID = dGeomTriMeshDataCreate();
-	dGeomTriMeshDataBuildDouble(world->BSP_Data.TriMeshID,
-		world->BSP_Data.triangles.GetData(), 3 * sizeof(dReal), world->BSP_Data.triangles.Num() / 3, // Verticles: Data, ?Step?, Count
-		world->BSP_Data.indices.GetData(), world->BSP_Data.indices.Num(), 3 * sizeof(dTriIndex));
-	dGeomTriMeshDataPreprocess2(world->BSP_Data.TriMeshID, (1U << dTRIDATAPREPROCESS_BUILD_FACE_ANGLES), NULL);
-	world->BSP_Data.TriMeshGeomID = dCreateTriMesh(world->BSP_Space, world->BSP_Data.TriMeshID, 0, 0, 0);
-	dGeomSetPosition(world->BSP_Data.TriMeshGeomID, 0, 0, 0);
-	dSpaceSetSublevel(world->BSP_Space, 1); // 1, 0 , 1
-	dSpaceSetSublevel(world->SM_Space, 0);
-	dSpaceSetSublevel(world->TER_Space, 2);
-	dSpaceSetSublevel(world->KA_Space, 3);
-	*/
     unguard;
 }
 
@@ -387,7 +350,7 @@ void KInitActorDynamics(AActor* actor)
 		debugf(TEXT("(PhysX): KInitActorDynamics: bStatic is true."));
 
 	PhData->material = Physics->createMaterial(0.5f, 0.5f, 0.6f);
-	PhData->body = physx::PxCreateDynamic(*Physics, physx::PxTransform(physx::PxVec3(0, 0, 0)), physx::PxConvexMeshGeometry(PWConvexFromTriData(&PhData->trimesh)), *PhData->material, 1.0);
+	PhData->body = physx::PxCreateDynamic(*Physics, physx::PxTransform(physx::PxVec3(actor->Location[0], actor->Location[1], actor->Location[2])), physx::PxConvexMeshGeometry(PWConvexFromTriData(&PhData->trimesh)), *PhData->material, 1.0);
 	world->Scene->addActor(*PhData->body);
 
 	//physx::PxRigid
