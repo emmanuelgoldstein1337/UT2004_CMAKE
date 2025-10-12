@@ -97,16 +97,7 @@ void KInitLevelKarma(ULevel* level)
 	// Now we add static level collision into arrays
 	PWAddBSPTrianglesPerSurf(level->Model, &world->BSP_Data);
 	//Terrain
-	PWAddTerrainTriangles(level, &world->TerrainData);
-	if (world->TerrainData.triangles.Num() > 0) {
-		physx::PxTriangleMesh* trimesh = PW_TerrainTrimeshFromTriData(&world->TerrainData);
-		physx::PxMaterial* TerrainMaterial = Physics->createMaterial(0.5f, 0.5f, 0.1f); // REMOVE THIS
-		physx::PxRigidStatic* TerrainMesh = physx::PxCreateStatic(*Physics, physx::PxTransform(physx::PxVec3(0, 0, 0)), physx::PxTriangleMeshGeometry(trimesh), *TerrainMaterial);
-		world->Scene->addActor(*TerrainMesh);
-		world->TerrainData.triangles.Empty();
-		world->TerrainData.indices.Empty();
-	}
-
+	PWAddTerrainTriangles(level);
 
 	// Add Level BSP Geometry to PhysX
 	physx::PxMaterial* Material = Physics->createMaterial(0.5f, 0.5f, 0.1f); // REMOVE THIS

@@ -31,34 +31,10 @@ void PWAddBSPTrianglesPerSurf(UModel* model, PhysicsTriData* triData)
 	}
 }
 
-static void PWAddTerrainVertices(ATerrainInfo* tInfo, PhysicsTriData* TerrainData)
+void PWAddTerrainTriangles(ULevel* level)
 {
-	for (int i = 0; i < tInfo->Vertices.Num(); i++)
-	{
-		physx::PxVec3 vertex;
-		vertex.x = tInfo->Vertices(i).X;
-		vertex.y = tInfo->Vertices(i).Y;
-		vertex.z = tInfo->Vertices(i).Z;
-		TerrainData->triangles.AddItem(vertex);
-	}
+	PhysX_World* world = (PhysX_World*)level->KWorld;
 
-	int hy = tInfo->HeightmapY;
-	int hx = tInfo->HeightmapX;
-	for (int iy = 0; iy < hy-1; iy++) {
-		for (int ix = 0; ix < hx-1; ix++)
-		{
-			TerrainData->indices.AddItem(ix + iy * hy);
-			TerrainData->indices.AddItem(ix + iy * hy + 1 );
-			TerrainData->indices.AddItem(ix + iy * hy + hy);
-			TerrainData->indices.AddItem(ix + iy * hy + hy);
-			TerrainData->indices.AddItem(ix + iy * hy + 1);
-			TerrainData->indices.AddItem(ix + iy * hy + hy + 1);
-		}
-	}
-}
-
-void PWAddTerrainTriangles(ULevel* level, PhysicsTriData* TerrainData)
-{
 	for (INT z = 0; z < 64; z++)
 	{
 		AZoneInfo* Z = level->GetZoneActor(z);
@@ -67,8 +43,36 @@ void PWAddTerrainTriangles(ULevel* level, PhysicsTriData* TerrainData)
 			for (INT t = 0; t < Z->Terrains.Num(); t++)
 			{
 				ATerrainInfo* tInfo = Z->Terrains(t);
-				PWAddTerrainVertices(tInfo, TerrainData);
-				break; // DELETE THIS
+				
+				PhysicsTriData triData;
+
+				for (int i = 0; i < tInfo->Vertices.Num(); i++)
+				{
+					physx::PxVec3 vertex;
+					vertex.x = tInfo->Vertices(i).X;
+					vertex.y = tInfo->Vertices(i).Y;
+					vertex.z = tInfo->Vertices(i).Z;
+					triData.triangles.AddItem(vertex);
+				}
+
+				int hy = tInfo->HeightmapY;
+				int hx = tInfo->HeightmapX;
+				for (int iy = 0; iy < hy - 1; iy++) {
+					for (int ix = 0; ix < hx - 1; ix++)
+					{
+						triData.indices.AddItem(ix + iy * hy);
+						triData.indices.AddItem(ix + iy * hy + 1);
+						triData.indices.AddItem(ix + iy * hy + hy);
+						triData.indices.AddItem(ix + iy * hy + hy);
+						triData.indices.AddItem(ix + iy * hy + 1);
+						triData.indices.AddItem(ix + iy * hy + hy + 1);
+					}
+				}
+
+				physx::PxTriangleMesh* trimesh = PW_TerrainTrimeshFromTriData(&triData);
+				physx::PxMaterial* TerrainMaterial = Physics->createMaterial(0.5f, 0.5f, 0.1f); // REMOVE THIS
+				physx::PxRigidStatic* TerrainMesh = physx::PxCreateStatic(*Physics, physx::PxTransform(physx::PxVec3(0, 0, 0)), physx::PxTriangleMeshGeometry(trimesh), *TerrainMaterial);
+				world->Scene->addActor(*TerrainMesh);
 			}
 		}
 	}
