@@ -9,6 +9,8 @@
 
 #include "EM_PhysX.h"
 
+using namespace physx;
+
 /// ************* Some globals ************* ///
 
 physx::PxDefaultAllocator	Allocator;
@@ -147,14 +149,6 @@ void KTickLevelKarma(ULevel* level, FLOAT DeltaSeconds)
 	world->Scene->simulate(1.0f / 60.0f);
 	world->Scene->fetchResults(true);
 
-	/*
-	dSpaceCollide(world->KA_Space, level, &nearCallback); // Pass the level data to callbac function
-	//dSpaceCollide(world->BSP_Space, level, &nearCallback);
-
-	dWorldStep(world->id, static_cast<dReal>(0.01)); //DeltaSeconds
-	//dWorldQuickStep(world->id, 0.01);
-	dJointGroupEmpty(world->contact_group);
-	*/
 	unguard;
 }
 
@@ -230,8 +224,8 @@ void KInitActorKarma(AActor* actor) //1161
 		// so create a 'null' one now.
 		if (!actor->bBlockKarma)
 		{
-			if (!actor->KParams)
-			{
+		if (!actor->KParams)
+		{
 				actor->KParams = ConstructObject<UKarmaParamsCollision>(
 					UKarmaParamsCollision::StaticClass(), actor->GetOuter());
 			}
@@ -273,6 +267,8 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 
 	PhysX_World* world = (PhysX_World*)level->KWorld;
 
+	PhData->material = Physics->createMaterial(0.5f, 0.5f, 0.6f); //TODO: Handle with this
+
 	// Static Mesh
 	if (actor->StaticMesh) {
 		// Add triangles
@@ -303,11 +299,15 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 		//PhysData->geometry = dCreateBox(world->SM_Space, (dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).X * K_ME2UScale,
 			//(dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Y * K_ME2UScale, (dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Z * K_ME2UScale);
 	}
-	/*
-
+	
+	
+	//Create static convex collision if actor is not dynamic
+	if (actor->Physics != PHYS_Karma) {
+		PhData->body = physx::PxCreateStatic(*Physics, physx::PxTransform(physx::PxVec3(actor->Location[0], actor->Location[1], actor->Location[2])), physx::PxConvexMeshGeometry(PWConvexFromTriData(&PhData->trimesh)), *PhData->material);
+		world->Scene->addActor(*PhData->body);
 	}
-
-
+	
+	/*
 	//Set position of the geom
 	dGeomSetPosition(PhysData->geometry, static_cast<dReal>(actor->Location[0]), static_cast<dReal>(actor->Location[1]), static_cast<dReal>(actor->Location[2]));
 	//Set rotation for the geom
@@ -316,6 +316,7 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 	dGeomSetRotation(PhysData->geometry, rotMatrix);
 	*/
 }
+
 void KTermActorCollision(AActor* actor)
 {
 	guard(KTermActorCollision);
@@ -352,12 +353,15 @@ void KInitActorDynamics(AActor* actor)
 
 	if (actor->bStatic)
 		debugf(TEXT("(PhysX): KInitActorDynamics: bStatic is true."));
-
-	PhData->material = Physics->createMaterial(0.5f, 0.5f, 0.6f);
-	PhData->body = physx::PxCreateDynamic(*Physics, physx::PxTransform(physx::PxVec3(actor->Location[0], actor->Location[1], actor->Location[2])), physx::PxConvexMeshGeometry(PWConvexFromTriData(&PhData->trimesh)), *PhData->material, 1.0);
+	
+	PxTransform transform = PxTransform(PxTransform(PxVec3(actor->Location[0], actor->Location[1], actor->Location[2]),PxQuat(actor->Rotation.Roll * -K_U2Rad, actor->Rotation.Pitch * -K_U2Rad, actor->Rotation.Yaw * K_U2Rad,PxHalfPi)));
+	PxTransform normalized = transform.getNormalized();
+	
+	PxShape* shape = Physics->createShape(PxConvexMeshGeometry(PWConvexFromTriData(&PhData->trimesh)), *PhData->material);
+	PhData->body = Physics->createRigidDynamic(normalized);
+	PhData->body->is<physx::PxRigidActor>()->attachShape(*shape);
+	physx::PxRigidBodyExt::updateMassAndInertia(*PhData->body->is<physx::PxRigidDynamic>(), 10.0f);
 	world->Scene->addActor(*PhData->body);
-
-	//physx::PxRigid
 	/*
 	PhysData->id = dBodyCreate(world->id);
 	dGeomSetBody(PhysData->geometry, PhysData->id);

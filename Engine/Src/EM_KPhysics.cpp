@@ -54,7 +54,7 @@ void AActor::physKarma(FLOAT deltaTime)
 		FVector(tm[1][0], tm[1][1], tm[1][2]),
 		FVector(tm[2][0], tm[2][1], tm[2][2]));
 	Rotation = cords.OrthoRotation();
-
+	
 	ULevel* level = GetLevel();
 	
 	level->FarMoveActor(this, { (FLOAT)location.x, (FLOAT)location.y, (FLOAT)location.z });
