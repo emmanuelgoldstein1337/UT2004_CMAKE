@@ -87,15 +87,6 @@ void KInitLevelKarma(ULevel* level)
 		PvdClient->setScenePvdFlag(physx::PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
 	}
 
-	// create simulation
-	//physx::PxMaterial * Material = Physics->createMaterial(0.5f, 0.5f, 0.6f);
-	//physx::PxRigidStatic* groundPlane = PxCreatePlane(*Physics, physx::PxPlane(0, 1, 0, 50), *Material);
-	//world->Scene->addActor(*groundPlane);
-	
-	//physx::PxRigidStatic* sphere = physx::PxCreateStatic(*Physics, physx::PxTransform(physx::PxVec3(0, 0, 0)), physx::PxSphereGeometry(128), *Material);
-	//physx::PxRigidDynamic* sphere = physx::PxCreateDynamic(*Physics, physx::PxTransform(physx::PxVec3(0, 0, 0)), physx::PxSphereGeometry(128), *Material, 1);
-	//world->Scene->addActor(*sphere);
-
 	// Now we add static level collision into arrays
 	PWAddBSPTrianglesPerSurf(level->Model, &world->BSP_Data);
 	//Terrain
@@ -285,11 +276,10 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 			PhData->trimesh.indices.AddItem((physx::PxU32)actor->StaticMesh->IndexBuffer.Indices(i + 2));
 			PhData->trimesh.indices.AddItem((physx::PxU32)actor->StaticMesh->IndexBuffer.Indices(i + 1));
 		}
+		
+		PhData->transform = PxTransform(PxTransform(PxVec3(actor->Location[0], actor->Location[1], actor->Location[2]), RotatorToQuaternion(actor->Rotation)));
+		PhData->shape = Physics->createShape(PxConvexMeshGeometry(PWConvexFromTriData(&PhData->trimesh)), *PhData->material);
 
-		//PhysData->TriMeshID = dGeomTriMeshDataCreate();
-		//dGeomTriMeshDataBuildDouble(PhysData->TriMeshID, PhysData->triangles.GetData(), 3 * sizeof(dReal), PhysData->triangles.Num() / 3, PhysData->indices.GetData(), PhysData->indices.Num(), 3 * sizeof(dTriIndex));
-		//dGeomTriMeshDataPreprocess2(PhysData->TriMeshID, (1U << dTRIDATAPREPROCESS_BUILD__MIN), NULL);
-		//PhysData->geometry = dCreateTriMesh(world->SM_Space, PhysData->TriMeshID, 0, 0, 0);
 	}
 
 	// Skeletar Mesh
@@ -303,7 +293,8 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 	
 	//Create static convex collision if actor is not dynamic
 	if (actor->Physics != PHYS_Karma) {
-		PhData->body = physx::PxCreateStatic(*Physics, physx::PxTransform(physx::PxVec3(actor->Location[0], actor->Location[1], actor->Location[2])), physx::PxConvexMeshGeometry(PWConvexFromTriData(&PhData->trimesh)), *PhData->material);
+		PhData->body = Physics->createRigidStatic(PhData->transform);
+		PhData->body->is<physx::PxRigidActor>()->attachShape(*PhData->shape);
 		world->Scene->addActor(*PhData->body);
 	}
 	
@@ -354,12 +345,8 @@ void KInitActorDynamics(AActor* actor)
 	if (actor->bStatic)
 		debugf(TEXT("(PhysX): KInitActorDynamics: bStatic is true."));
 	
-	PxTransform transform = PxTransform(PxTransform(PxVec3(actor->Location[0], actor->Location[1], actor->Location[2]),PxQuat(actor->Rotation.Roll * -K_U2Rad, actor->Rotation.Pitch * -K_U2Rad, actor->Rotation.Yaw * K_U2Rad,PxHalfPi)));
-	PxTransform normalized = transform.getNormalized();
-	
-	PxShape* shape = Physics->createShape(PxConvexMeshGeometry(PWConvexFromTriData(&PhData->trimesh)), *PhData->material);
-	PhData->body = Physics->createRigidDynamic(normalized);
-	PhData->body->is<physx::PxRigidActor>()->attachShape(*shape);
+	PhData->body = Physics->createRigidDynamic(PhData->transform.getNormalized());
+	PhData->body->is<physx::PxRigidActor>()->attachShape(*PhData->shape);
 	physx::PxRigidBodyExt::updateMassAndInertia(*PhData->body->is<physx::PxRigidDynamic>(), 10.0f);
 	world->Scene->addActor(*PhData->body);
 	/*

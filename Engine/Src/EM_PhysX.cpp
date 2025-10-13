@@ -1,3 +1,5 @@
+#ifdef WITH_PHYS_WRAP
+
 #include "EM_PhysX.h"
 
 void PWAddBSPTrianglesPerSurf(UModel* model, PhysicsTriData* triData)
@@ -151,3 +153,36 @@ physx::PxConvexMesh* PWConvexFromTriData(PhysicsTriData* triData)
 	*/
 	return convex; //PxCreateTriangleMesh(params, desc);
 }
+
+PxQuat RotatorToQuaternion(FRotator rot)
+{
+	float roll = rot.Roll % 65536;
+	float pitch = rot.Pitch % 65536;
+	float yaw = rot.Yaw % 65536;
+
+	// Convert to radians
+	roll *= -K_U2Rad;
+	pitch *= -K_U2Rad;
+	yaw *= K_U2Rad;
+
+	// Calculate half angles
+	const float cr = appCos(roll / 2);
+	const float sr = appSin(roll / 2);
+	const float cp = appCos(pitch / 2);
+	const float sp = appSin(pitch / 2);
+	const float cy = appCos(yaw / 2);
+	const float sy = appSin(yaw / 2);
+
+	// Calculate quaternion
+	const float q1 = cr * cp * cy + sr * sp * sy;
+	const float q2 = sr * cp * cy - cr * sp * sy;
+	const float q3 = cr * sp * cy + sr * cp * sy;
+	const float q4 = cr * cp * sy - sr * sp * cy;
+
+	// Normalise
+	const float magnitude = appSqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);
+
+	return PxQuat(q2 / magnitude, q3 / magnitude, q4 / magnitude, q1 / magnitude);
+}
+
+#endif // WITH_PHYS_WRAP

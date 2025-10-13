@@ -1,5 +1,3 @@
-//#include "EnginePrivate.h"
-
 #ifdef WITH_PHYS_WRAP
 
 #include "EM_PhysX.h"

@@ -1,6 +1,6 @@
-#include "EM_PhysX.h"
-
 #ifdef WITH_PHYS_WRAP
+
+#include "EM_PhysX.h"
 
 void AActor::KWake() {}
 

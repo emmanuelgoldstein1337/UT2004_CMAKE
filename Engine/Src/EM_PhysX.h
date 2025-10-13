@@ -1,28 +1,30 @@
+#ifdef WITH_PHYS_WRAP
+
 #include "PxPhysics.h"
 #include "PxPhysicsAPI.h"
 
 #include "EnginePrivate.h"
 
-
+using namespace physx;
 
 /// ************* Some globals ************* ///
 
-extern physx::PxDefaultAllocator	Allocator;
-extern physx::PxDefaultErrorCallback	ErrorCallback;
-extern physx::PxFoundation*	Foundation;
-extern physx::PxPhysics*	Physics;
-extern physx::PxDefaultCpuDispatcher*	Dispatcher;
-extern physx::PxSceneDesc* SceneDesc;
-extern physx::PxPvd* Pvd; // PhysX Visual Debugger
-extern physx::PxPvdTransport* transport; // Debugger transport
-extern physx::PxTolerancesScale TolerancesScale;
+extern PxDefaultAllocator	Allocator;
+extern PxDefaultErrorCallback	ErrorCallback;
+extern PxFoundation*	Foundation;
+extern PxPhysics*	Physics;
+extern PxDefaultCpuDispatcher*	Dispatcher;
+extern PxSceneDesc* SceneDesc;
+extern PxPvd* Pvd; // PhysX Visual Debugger
+extern PxPvdTransport* transport; // Debugger transport
+extern PxTolerancesScale TolerancesScale;
 
 /// *********** Internal structs *********** ///
 
 typedef struct _PhysicsTriData
 {
-	TArray<physx::PxVec3>	triangles;
-	TArray<physx::PxU32>	indices;
+	TArray<PxVec3>	triangles;
+	TArray<PxU32>	indices;
 
 	//physx::PxTriangleMeshDesc	desc;
 	//physx::PxTriangleMesh *		mesh;
@@ -32,7 +34,7 @@ typedef struct _PhysicsTriData
 //
 typedef struct _PhysX_World
 {
-	physx::PxScene* Scene;
+	PxScene* Scene;
 	
 	PhysicsTriData BSP_Data;
 } PhysX_World;
@@ -42,8 +44,10 @@ typedef struct PhysData
 {
 	PhysicsTriData trimesh;
 
-	physx::PxMaterial* material;
-	physx::PxActor* body;//
+	PxMaterial*	material;
+	PxTransform	transform;
+	PxShape*	shape;
+	PxActor*	body;
 
 } _PhysData;
 
@@ -95,6 +99,10 @@ typedef struct _ODE_PhysData
 void PWAddBSPTrianglesPerSurf(UModel* model, PhysicsTriData* triData);
 void PWAddTerrainTriangles(ULevel* level);
 
-physx::PxTriangleMesh* PWTrimeshFromTriData(PhysicsTriData* triData);
-physx::PxTriangleMesh* PW_TerrainTrimeshFromTriData(PhysicsTriData* triData);
-physx::PxConvexMesh* PWConvexFromTriData(PhysicsTriData* triData);
+PxTriangleMesh* PWTrimeshFromTriData(PhysicsTriData* triData);
+PxTriangleMesh* PW_TerrainTrimeshFromTriData(PhysicsTriData* triData);
+PxConvexMesh* PWConvexFromTriData(PhysicsTriData* triData);
+
+PxQuat RotatorToQuaternion(FRotator rot);
+
+#endif // WITH_PHYS_WRAP

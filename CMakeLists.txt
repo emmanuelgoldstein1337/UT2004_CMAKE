@@ -16,7 +16,7 @@ else()
    	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/System)
 endif()
 
-option(PHYSICS_WRAPPER "Replase KARMA Physics engine" OFF)
+option(PHYSICS_WRAPPER "Replase KARMA Physics engine" ON)# If its option is off project wont build, i need fix this.
 if (PHYSICS_WRAPPER)	
 	add_compile_definitions(WITH_PHYS_WRAP)
     
@@ -88,7 +88,6 @@ add_compile_definitions(
     ASM3DNOW=0
     RESTRICTEXPORT=0
     NO_KARMA=1
-    STUB_KARMA_FUNCS
     #WITH_KARMA
     FORCE_EXTREME_PACKING=0
     WINDOWS_IGNORE_PACKING_MISMATCH=1
@@ -118,8 +117,7 @@ file(GLOB_RECURSE CORE_SRC ${PROJECT_SOURCE_DIR}/Core/Src/*.cpp ${PROJECT_SOURCE
 add_library(Core SHARED ${CORE_SRC})
 add_dependencies(Core ogg vorbis vorbisfile)
 target_compile_definitions(Core PRIVATE CORE_API=DLL_EXPORT)
-#set_target_properties(Core PROPERTIES LINKER_LANGUAGE C)
-target_link_libraries(Core PRIVATE System_Archive/ogg System_Archive/vorbis System_Archive/vorbisfile winmm)
+target_link_libraries(Core PRIVATE ogg vorbis vorbisfile winmm)
 target_include_directories(Core PRIVATE Vorbis/ogg/include Vorbis/vorbis/include Core/Inc)
 target_compile_options(Core PRIVATE ${UE_COMP_OPTIONS})
 
@@ -127,14 +125,14 @@ file(GLOB_RECURSE ENGINE_SRC ${PROJECT_SOURCE_DIR}/Engine/Src/*.cpp ${PROJECT_SO
 add_library(Engine SHARED ${ENGINE_SRC})
 add_dependencies(Engine Core)
 target_compile_definitions(Engine PRIVATE ENGINE_API=DLL_EXPORT)
-target_link_libraries(Engine PRIVATE System_Archive/Core PhysX PhysXCommon PhysXFoundation PhysXCooking PhysXExtensions)
+target_link_libraries(Engine PRIVATE Core PhysX PhysXCommon PhysXFoundation PhysXCooking PhysXExtensions)
 target_include_directories(Engine PUBLIC Engine/Inc Core/Inc IFC/Inc PhysX/include)
 target_compile_options(Engine PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE FIRE_SRC ${PROJECT_SOURCE_DIR}/Fire/Src/*.cpp ${PROJECT_SOURCE_DIR}/Fire/Inc/*.h)
 add_library(Fire SHARED ${FIRE_SRC})
 add_dependencies(Fire Engine Core)
-target_link_libraries(Fire PUBLIC System_Archive/Core System_Archive/Engine)
+target_link_libraries(Fire PUBLIC Core Engine)
 target_include_directories(Fire PUBLIC Engine/Inc Core/Inc Fire/Inc)
 #target_compile_options(Fire PRIVATE ${UE_COMP_OPTIONS})
 
@@ -142,7 +140,7 @@ file(GLOB_RECURSE XGAME_SRC ${PROJECT_SOURCE_DIR}/XGame/Src/*.cpp ${PROJECT_SOUR
 add_library(XGame SHARED ${XGAME_SRC})
 add_dependencies(XGame Engine Core)
 target_compile_definitions(XGame PRIVATE XGAME_API=DLL_EXPORT)
-target_link_libraries(XGame PUBLIC System_Archive/Core System_Archive/Engine)
+target_link_libraries(XGame PUBLIC Core Engine)
 target_include_directories(XGame PUBLIC Engine/Inc Core/Inc XGame/Inc)
 #target_compile_options(XGame PRIVATE ${UE_COMP_OPTIONS})
 
@@ -150,7 +148,7 @@ file(GLOB_RECURSE EDITOR_SRC ${PROJECT_SOURCE_DIR}/Editor/Src/*.cpp ${PROJECT_SO
 add_library(Editor SHARED ${EDITOR_SRC})
 add_dependencies(Editor Engine Core)
 target_compile_definitions(Editor PRIVATE EDITOR_API=DLL_EXPORT)
-target_link_libraries(Editor PUBLIC System_Archive/Core System_Archive/Engine)
+target_link_libraries(Editor PUBLIC Core Engine)
 target_include_directories(Editor PUBLIC Engine/Inc Core/Inc Window/Inc Editor/Inc)
 #target_compile_options(Editor PRIVATE ${UE_COMP_OPTIONS})
 
@@ -158,7 +156,7 @@ file(GLOB_RECURSE IPDRV_SRC ${PROJECT_SOURCE_DIR}/IpDrv/Src/*.cpp ${PROJECT_SOUR
 add_library(IpDrv SHARED ${IPDRV_SRC})
 add_dependencies(IpDrv Engine Core)
 target_compile_definitions(IpDrv PRIVATE IPDRV_API=DLL_EXPORT)
-target_link_libraries(IpDrv PUBLIC System_Archive/Core System_Archive/Engine PRIVATE wsock32)
+target_link_libraries(IpDrv PUBLIC Core Engine PRIVATE wsock32)
 target_include_directories(IpDrv PUBLIC Engine/Inc Core/Inc IpDrv/Inc)
 #target_compile_options(IpDrv PRIVATE ${UE_COMP_OPTIONS})
 
@@ -166,11 +164,7 @@ file(GLOB_RECURSE ALAUDIO_SRC ${PROJECT_SOURCE_DIR}/ALAudio/Src/*.cpp ${PROJECT_
 add_library(ALAudio SHARED ${ALAUDIO_SRC})
 add_dependencies(ALAudio Engine Core vorbis vorbisfile vorbisenc ogg libspeex)
 target_compile_definitions(ALAudio PRIVATE ALAUDIO_API=DLL_EXPORT _USRDLL ALAUDIO_EXPORTS)
-target_link_libraries(ALAudio PUBLIC System_Archive/Core System_Archive/Engine
-    System_Archive/vorbis System_Archive/ogg System_Archive/vorbisfile
-    System_Archive/vorbisenc
-    System_Archive/libspeex
-    PRIVATE DxGuid dsound odbc32 odbccp32)
+target_link_libraries(ALAudio PUBLIC Core Engine vorbis ogg vorbisfile vorbisenc libspeex PRIVATE DxGuid dsound odbc32 odbccp32)
 target_include_directories(ALAudio PUBLIC Engine/Inc Core/Inc ALAudio/Inc OpenAL/Inc Vorbis/vorbis/include Vorbis/ogg/include)
 #target_compile_options(ALAudio PRIVATE ${UE_COMP_OPTIONS})
 
@@ -178,14 +172,14 @@ file(GLOB_RECURSE WINDOW_SRC ${PROJECT_SOURCE_DIR}/Window/Src/*.cpp ${PROJECT_SO
 add_library(Window SHARED ${WINDOW_SRC})
 add_dependencies(Window Engine Core)
 target_compile_definitions(Window PRIVATE WINDOW_API=DLL_EXPORT)
-target_link_libraries(Window PUBLIC System_Archive/Core System_Archive/Engine PRIVATE comctl32)
+target_link_libraries(Window PUBLIC Core Engine PRIVATE comctl32)
 target_include_directories(Window PUBLIC Engine/Inc Core/Inc Window/Inc)
 #target_compile_options(Window PRIVATE ${UE_COMP_OPTIONS})
 
 add_library(UWeb SHARED UWeb/Src/UWeb.cpp UWeb/Src/UWebNative.cpp UWeb/Src/WebServer.cpp)
 add_dependencies(UWeb Engine Core)
 target_compile_definitions(UWeb PRIVATE UWEB_API=DLL_EXPORT)
-target_link_libraries(UWeb PUBLIC System_Archive/Core System_Archive/Engine)
+target_link_libraries(UWeb PUBLIC Core Engine)
 target_include_directories(UWeb PUBLIC Engine/Inc Core/Inc UWeb/Inc)
 #target_compile_options(UWeb PRIVATE ${UE_COMP_OPTIONS})
 
@@ -193,8 +187,7 @@ file(GLOB_RECURSE XINTERFACE_SRC ${PROJECT_SOURCE_DIR}/XInterface/Src/*.cpp ${PR
 add_library(XInterface SHARED ${XINTERFACE_SRC})
 add_dependencies(XInterface Engine Core IpDrv Window XGame)
 target_compile_definitions(XInterface PRIVATE XINTERFACE_API=DLL_EXPORT)
-target_link_libraries(XInterface PUBLIC System_Archive/Core System_Archive/Engine
-    System_Archive/IpDrv System_Archive/Window System_Archive/XGame)
+target_link_libraries(XInterface PUBLIC Core Engine IpDrv Window XGame)
 target_include_directories(XInterface PUBLIC
     Engine/Inc Core/Inc Window/Inc
     XInterface/Inc XGame/Inc IpDrv/Inc)
@@ -204,7 +197,7 @@ file(GLOB_RECURSE WINDRV_SRC ${PROJECT_SOURCE_DIR}/WinDrv/Src/*.cpp ${PROJECT_SO
 add_library(WinDrv SHARED ${WINDRV_SRC})
 add_dependencies(WinDrv Window Engine Core)
 target_compile_definitions(WinDrv PRIVATE WINDRV_API=DLL_EXPORT)
-target_link_libraries(WinDrv PUBLIC System_Archive/Core System_Archive/Engine System_Archive/Window PRIVATE imm32 dinput8 dxguid)#dxerr8
+target_link_libraries(WinDrv PUBLIC Core Engine Window PRIVATE imm32 dinput8 dxguid)#dxerr8
 target_include_directories(WinDrv PUBLIC Engine/Inc Core/Inc Window/Inc WinDrv/Inc
     ALegacy/DirectX8/Inc)
 #target_compile_options(WinDrv PRIVATE ${UE_COMP_OPTIONS})
@@ -213,14 +206,14 @@ file(GLOB_RECURSE SDLDRV_SRC ${PROJECT_SOURCE_DIR}/SDLDrv/Src/*.cpp ${PROJECT_SO
 add_library(SDLDrv SHARED ${SDLDRV_SRC})
 add_dependencies(SDLDrv Window Engine Core)
 target_compile_definitions(SDLDrv PRIVATE SDLDRV_API=DLL_EXPORT)
-target_link_libraries(SDLDrv PUBLIC System_Archive/Core System_Archive/Engine System_Archive/Window PRIVATE SDL3::SDL3)#dxerr8
+target_link_libraries(SDLDrv PUBLIC Core Engine Window PRIVATE SDL3::SDL3)#dxerr8
 target_include_directories(SDLDrv PUBLIC Engine/Inc Core/Inc Window/Inc SDLDrv/Inc PRIVATE ${SDL_INCLUDES})
 #target_compile_options(SDLDrv PRIVATE ${UE_COMP_OPTIONS})
 
 file(GLOB_RECURSE UTV2004_SRC ${PROJECT_SOURCE_DIR}/UTV2004/Src/*.cpp ${PROJECT_SOURCE_DIR}/UTV2004/Inc/*.h)
 add_library(UTV2004 SHARED ${UTV2004_SRC})
 add_dependencies(UTV2004 Engine Core IpDrv)
-target_link_libraries(UTV2004 PUBLIC System_Archive/Core System_Archive/Engine System_Archive/IpDrv PRIVATE wsock32)
+target_link_libraries(UTV2004 PUBLIC Core Engine IpDrv PRIVATE wsock32)
 target_include_directories(UTV2004 PUBLIC Engine/Inc Core/Inc IpDrv/Inc UTV2004/Inc)
 #target_compile_options(UTV2004 PRIVATE ${UE_COMP_OPTIONS})
 
@@ -228,7 +221,7 @@ file(GLOB_RECURSE OPENGLDRV_SRC ${PROJECT_SOURCE_DIR}/OpenGLDrv/Src/*.cpp ${PROJ
 add_library(OpenGLDrv SHARED ${OPENGLDRV_SRC})
 add_dependencies(OpenGLDrv Engine Core)
 target_compile_definitions(OpenGLDrv PRIVATE OPENGLDRV_API=DLL_EXPORT _USRDLL OPENGLDRV_EXPORTS)
-target_link_libraries(OpenGLDrv PUBLIC System_Archive/Core System_Archive/Engine PRIVATE SDL3::SDL3)
+target_link_libraries(OpenGLDrv PUBLIC Core Engine PRIVATE SDL3::SDL3)
 target_include_directories(OpenGLDrv PUBLIC Engine/Inc Core/Inc OpenGLDrv/Inc PRIVATE ${SDL_INCLUDES})
 #target_compile_options(OpenGLDrv PRIVATE ${UE_COMP_OPTIONS})
 
@@ -236,14 +229,14 @@ file(GLOB_RECURSE ONSLAUGHT_SRC ${PROJECT_SOURCE_DIR}/Onslaught/Src/*.cpp ${PROJ
 add_library(Onslaught SHARED ${ONSLAUGHT_SRC})
 add_dependencies(Onslaught Engine Core XGame IpDrv)
 target_compile_definitions(Onslaught PRIVATE ONSLAUGHT_API=DLL_EXPORT)
-target_link_libraries(Onslaught PUBLIC System_Archive/Core System_Archive/Engine System_Archive/XGame System_Archive/IpDrv)
+target_link_libraries(Onslaught PUBLIC Core Engine XGame IpDrv)
 target_include_directories(Onslaught PUBLIC Engine/Inc Core/Inc XGame/Inc IpDrv/Inc Onslaught/Inc)
 #target_compile_options(Onslaught PRIVATE ${UE_COMP_OPTIONS})
 
 add_library(GUIDesigner SHARED GUIDesigner/Src/GUIDesign.cpp)
 add_dependencies(GUIDesigner Engine Core XGame IpDrv Window XInterface)
 target_compile_definitions(GUIDesigner PRIVATE GUIDESIGNER_API=DLL_EXPORT)
-target_link_libraries(GUIDesigner PUBLIC System_Archive/Core System_Archive/Engine System_Archive/XGame System_Archive/XInterface System_Archive/IpDrv System_Archive/Window)
+target_link_libraries(GUIDesigner PUBLIC Core Engine XGame XInterface IpDrv Window)
 target_include_directories(GUIDesigner PUBLIC Engine/Inc Core/Inc XGame/Inc IpDrv/Inc Window/Inc UnrealEd/Inc XInterface/Inc GUIDesigner/Inc)
 #target_compile_options(GUIDesigner PRIVATE ${UE_COMP_OPTIONS})
 
@@ -263,7 +256,7 @@ target_include_directories(GUIDesigner PUBLIC Engine/Inc Core/Inc XGame/Inc IpDr
 add_executable(UCC UCC/Src/UCC.cpp)
 add_dependencies(UCC Core Engine zlib)
 target_compile_definitions(UCC PRIVATE _CONSOLE)
-target_link_libraries(UCC PUBLIC System_Archive/Core System_Archive/zlib)
+target_link_libraries(UCC PUBLIC Core zlib)
 target_include_directories(UCC PUBLIC Core/Inc Engine/Inc)
 
 file(GLOB_RECURSE SETUP_SRC ${PROJECT_SOURCE_DIR}/Setup/Src/*.cpp ${PROJECT_SOURCE_DIR}/Setup/Inc/*.h)
@@ -271,13 +264,13 @@ add_executable(Setup ${SETUP_SRC})
 add_dependencies(Setup Core Window zlib)
 #target_compile_definitions(Setup PUBLIC _CONSOLE)
 target_link_options(Setup PRIVATE "/SUBSYSTEM:WINDOWS")
-target_link_libraries(Setup PUBLIC System_Archive/Core System_Archive/Window System_Archive/zlib PRIVATE wsock32)
+target_link_libraries(Setup PUBLIC Core Window zlib PRIVATE wsock32)
 target_include_directories(Setup PUBLIC Core/Inc Window/Inc Setup/Inc ALegacy/DirectX8/Inc)
 
 add_executable(UT2004_Game Launch/Src/Launch.cpp Launch/Src/Helper.cpp)
 add_dependencies(UT2004_Game Core Engine Window zlib)
 target_link_options(UT2004_Game PRIVATE "/SUBSYSTEM:WINDOWS" ${UE_LINK_OPTIONS})
-target_link_libraries(UT2004_Game PUBLIC System_Archive/Core System_Archive/Engine System_Archive/Window System_Archive/zlib PRIVATE Comdlg32 Dbghelp DxGuid ddraw wbemuuid comsupp)
+target_link_libraries(UT2004_Game PUBLIC Core Engine Window zlib PRIVATE Comdlg32 Dbghelp DxGuid ddraw wbemuuid comsupp)
 target_include_directories(UT2004_Game PUBLIC Core/Inc Engine/Inc Window/Inc)
 
 #file(GLOB_RECURSE UNREALED_SRC ${PROJECT_SOURCE_DIR}/UnrealEd/Src/*.cpp ${PROJECT_SOURCE_DIR}/UnrealEd/Inc/*.h)
