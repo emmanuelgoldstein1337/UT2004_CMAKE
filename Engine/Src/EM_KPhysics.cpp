@@ -40,8 +40,10 @@ void AActor::physKarma(FLOAT deltaTime)
 		return; 
 	}
 
-	if (!StaticMesh) //DELETE ME
+	if (!StaticMesh && !Mesh) //DELETE ME
 		return;
+
+	preKarmaStep(deltaTime);// !!!! BUG ALERT: ORIGINALY THIS CALLED NOT FROM HERE !!!!
 
 	physx::PxTransform transform = model->body->is<physx::PxRigidActor>()->getGlobalPose();
 	physx::PxVec3 location = transform.p;
@@ -72,23 +74,16 @@ void AActor::physKarma(FLOAT deltaTime)
 	if (!model)
 		return;
 
-	preKarmaStep(deltaTime);// !!!! BUG ALERT: ORIGINALY THIS CALLED NOT FROM HERE !!!!
+	
 
 	// Handle any updates to the rigid body state from script.
 	// Note: Because actors are always ticked before constraints, we can be sure the constraint will
 	// get the most up-to-date state.
 	FKRigidBodyState newState;
 	eventKUpdateState(newState);
-
-	
-	const dReal * CPos = dBodyGetPosition(model);
-	const dReal * CRot = dBodyGetRotation(model); // 0,2, 3?, 5, 7?,8 10, 11; // 0 5 10
-
-	this->Rotation = RotatorFromMatrix(CRot);
-	
+	*/
 
 	unclock(GStats.DWORDStats(GEngineStats.STATS_Karma_physKarma));
-	*/
 	unguard;
 }
 

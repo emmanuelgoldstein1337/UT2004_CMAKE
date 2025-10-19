@@ -40,9 +40,10 @@ void KInitGameKarma() // (1)
 		// Unit scale
 		TolerancesScale.length = K_ME2UScale;
 		TolerancesScale.speed = 1;
-
+		
 		// Create physics
 		Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *Foundation, TolerancesScale, true, Pvd);
+		PxInitExtensions(*Physics, Pvd);
 
 		// Scene
 		SceneDesc = new physx::PxSceneDesc(Physics->getTolerancesScale());
@@ -86,6 +87,9 @@ void KInitLevelKarma(ULevel* level)
 		PvdClient->setScenePvdFlag(physx::PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
 		PvdClient->setScenePvdFlag(physx::PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
 	}
+
+	world->Scene->setVisualizationParameter(PxVisualizationParameter::eJOINT_LOCAL_FRAMES, 1.0f);
+	world->Scene->setVisualizationParameter(PxVisualizationParameter::eJOINT_LIMITS, 1.0f);
 
 	// Now we add static level collision into arrays
 	PWAddBSPTrianglesPerSurf(level->Model, &world->BSP_Data);
@@ -260,6 +264,9 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 
 	PhData->material = Physics->createMaterial(0.5f, 0.5f, 0.6f); //TODO: Handle with this
 
+	// Set location
+	PhData->transform = PxTransform(PxTransform(PxVec3(actor->Location[0], actor->Location[1], actor->Location[2]), RotatorToQuaternion(actor->Rotation)));
+
 	// Static Mesh
 	if (actor->StaticMesh) {
 		// Add triangles
@@ -277,17 +284,20 @@ void KInitActorCollision(AActor* actor, UBOOL makeNull) //KCreateActorGeometry
 			PhData->trimesh.indices.AddItem((physx::PxU32)actor->StaticMesh->IndexBuffer.Indices(i + 1));
 		}
 		
-		PhData->transform = PxTransform(PxTransform(PxVec3(actor->Location[0], actor->Location[1], actor->Location[2]), RotatorToQuaternion(actor->Rotation)));
 		PhData->shape = Physics->createShape(PxConvexMeshGeometry(PWConvexFromTriData(&PhData->trimesh)), *PhData->material);
 
 	}
 
 	// Skeletar Mesh
 	if (actor->Mesh) {
-		//PhysData->geometry = dCreateSphere(world->SM_Space, 128);
 		USkeletalMesh* smesh = Cast<USkeletalMesh>(actor->Mesh);
-		//PhysData->geometry = dCreateBox(world->SM_Space, (dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).X * K_ME2UScale,
-			//(dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Y * K_ME2UScale, (dReal)smesh->KPhysicsProps->AggGeom.BoxElems(0).Z * K_ME2UScale);
+		PhData->shape = Physics->createShape(
+			PxBoxGeometry(
+				smesh->KPhysicsProps->AggGeom.BoxElems(0).X * K_ME2UScale / 2,
+				smesh->KPhysicsProps->AggGeom.BoxElems(0).Y * K_ME2UScale / 2,
+				smesh->KPhysicsProps->AggGeom.BoxElems(0).Z * K_ME2UScale / 2),
+			*PhData->material
+		);
 	}
 	
 	
@@ -331,7 +341,7 @@ void KInitActorDynamics(AActor* actor)
 	if (actor->bDeleteMe)
 		return;
 
-	if (!actor->StaticMesh)
+	if (!actor->StaticMesh && !actor->Mesh) // DELETE ME
 		return;
 
 	ULevel* level = actor->GetLevel();
@@ -347,7 +357,7 @@ void KInitActorDynamics(AActor* actor)
 	
 	PhData->body = Physics->createRigidDynamic(PhData->transform.getNormalized());
 	PhData->body->is<physx::PxRigidActor>()->attachShape(*PhData->shape);
-	physx::PxRigidBodyExt::updateMassAndInertia(*PhData->body->is<physx::PxRigidDynamic>(), 10.0f);
+	PxRigidBodyExt::updateMassAndInertia(*PhData->body->is<PxRigidDynamic>(), 1.0f);
 	world->Scene->addActor(*PhData->body);
 	/*
 	PhysData->id = dBodyCreate(world->id);

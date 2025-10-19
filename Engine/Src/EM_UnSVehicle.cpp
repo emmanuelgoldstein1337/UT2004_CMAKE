@@ -89,63 +89,51 @@ static FMatrix RefMeshToWorld(USkeletalMesh* smesh)
 	return NewMatrix;
 }
 
-static void addODEWheels(ASVehicle* vehicle)
+static void addPhysXWheels(ASVehicle* vehicle)
 {
-	/*
-	ODE_PhysData* PhysData = (ODE_PhysData*)vehicle->KParams->KarmaData;
+	PhysData* PhData = (PhysData*)vehicle->KParams->KarmaData;
 	ULevel* level = vehicle->GetLevel();
-	ODE_World* world = (ODE_World*)level->KWorld;
-	dBodyID vehicle_id = PhysData->id;
-
+	PhysX_World* world = (PhysX_World*)level->KWorld;
+	PxRigidDynamic* vehicle_actor = (PxRigidDynamic*)PhData->body;
+	
 	for (INT i = 0; i < vehicle->Wheels.Num(); i++)
 	{
 		USVehicleWheel* wheel = vehicle->Wheels(i);
+		
+		// Location
+		PxTransform wheel_transform = PxTransform(
+			PxVec3(
+				wheel->WheelPosition.X + vehicle->Location.X,
+				wheel->WheelPosition.Y + vehicle->Location.Y,
+				wheel->WheelPosition.Z + vehicle->Location.Z
+			)
+		);
+
+		PxTransform wheel_relative = PxTransform(
+			PxVec3(
+				wheel->WheelPosition.X,
+				wheel->WheelPosition.Y,
+				wheel->WheelPosition.Z
+			)
+		);
+		// Material
+		PxMaterial* wheel_material = Physics->createMaterial(0.5, 0.5, 0.5);
 
 		// Body
-		PhysData->wheels.Add(1);
-		PhysData->wheels(i).id = dBodyCreate(world->id);
-		dBodyID id = PhysData->wheels(i).id;
+		PxRigidDynamic* wheel_body = Physics->createRigidDynamic(wheel_transform);
+		PxShape* wheel_shape = Physics->createShape(PxSphereGeometry(wheel->WheelRadius), *wheel_material);
+		wheel_body->attachShape(*wheel_shape);
+		PxRigidBodyExt::updateMassAndInertia(*wheel_body, 1.0f);
+		world->Scene->addActor(*wheel_body);
 
-		// Rotation
-		dMatrix3 rotMatrix;
-		dRFromEulerAngles(rotMatrix, static_cast<dReal>(wheel->WheelAxle.X * K_U2Rad), static_cast<dReal>(wheel->WheelAxle.Y * K_U2Rad), static_cast<dReal>(wheel->WheelAxle.Z * K_U2Rad));
-		dBodySetRotation(id, rotMatrix);
+		//Joints
 
-		// Position
-		dBodySetPosition(id, wheel->WheelPosition.X, wheel->WheelPosition.Y, wheel->WheelPosition.Z);
-		
+		PxRevoluteJoint* j = PxRevoluteJointCreate(*Physics, vehicle_actor, wheel_relative, wheel_body, PxTransform(PxVec3(0, 0, 0)));
+		j->setConstraintFlag(PxConstraintFlag::eVISUALIZATION, true);
+		//j->setDriveVelocity(0);
 
-		// Mass
-		dMass mass;
-		dMassSetSphere(&mass, 1, (dReal)wheel->WheelRadius);
-		dMassAdjust(&mass, 0.2); //TODO: Adjust it later
-		dBodySetMass(id, &mass);
-
-		// Geom
-		PhysData->wheels(i).geom = dCreateSphere(world->KA_Space, (dReal)wheel->WheelRadius);
-		dGeomSetBody(PhysData->wheels(i).geom, id);
-
-		// Joints
-		PhysData->wheels(i).joint = dJointCreateHinge2(world->id, 0);
-		//PhysData->wheels(i).joint = dJointCreateFixed(world->id, 0);
-		dJointID joint_id = PhysData->wheels(i).joint;
-		//dBodySetPosition(id, -10, 0, -10);
-
-		dJointAttach(joint_id, vehicle_id, id);
-		//dJointSetFixed(joint_id);
-
-		dJointSetHinge2Anchor(joint_id, wheel->WheelPosition.X, wheel->WheelPosition.Y, wheel->WheelPosition.Z);
-		const dVector3 yunit = { 0, 1, 0 }, zunit = { 0, 0, 1 };
-		dJointSetHinge2Axes(joint_id, yunit, zunit);
-
-		dJointSetHinge2Param(joint_id, dParamSuspensionERP, 0.4); // set joint suspension
-		dJointSetHinge2Param(joint_id, dParamSuspensionCFM, 0.8);
-
-		// set stops to make sure wheels always stay in alignment
-		dJointSetHinge2Param(joint_id, dParamLoStop, 0);
-		dJointSetHinge2Param(joint_id, dParamHiStop, 0);
 	}
-	*/
+	
 }
 
 void ASVehicle::PostBeginPlay()
@@ -241,7 +229,7 @@ void ASVehicle::PostBeginPlay()
 		}
 	}
 
-	addODEWheels(this); //TODO: Relocate this
+	addPhysXWheels(this); //TODO: Relocate this
 
 	unguard;
 }
