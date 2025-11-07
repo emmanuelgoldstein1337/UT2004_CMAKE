@@ -58,10 +58,9 @@ void ASVehicle::preKarmaStep(FLOAT DeltaTime)
 
 		// Add chassis torque from wheel
 		///EM MdtBodyAddTorque(body, vw->WheelAxle.X * vw->ChassisTorque,	vw->WheelAxle.Y * vw->ChassisTorque, vw->WheelAxle.Z * vw->ChassisTorque);
-
-		vw->ChassisTorque += 12;
-		vw->WheelAxle.X += 64;
+		((PhysX_Wheel*)vw->KContact)->joint->setDriveVelocity(vw->DriveForce * vw->WheelDir.X);
 	}
+
 	unguard;
 }
 
@@ -100,6 +99,10 @@ static void addPhysXWheels(ASVehicle* vehicle)
 	{
 		USVehicleWheel* wheel = vehicle->Wheels(i);
 		
+		// PhysX Wheel
+		wheel->KContact = (PTRINT) new PhysX_Wheel;
+		PhysX_Wheel* PWheel = (PhysX_Wheel*)wheel->KContact;
+
 		// Location
 		PxTransform wheel_transform = PxTransform(
 			PxVec3(
@@ -114,7 +117,8 @@ static void addPhysXWheels(ASVehicle* vehicle)
 				wheel->WheelPosition.X,
 				wheel->WheelPosition.Y,
 				wheel->WheelPosition.Z
-			)
+			),
+			RotatorToQuaternion(FRotator(0, 16384, 0))
 		);
 		// Material
 		PxMaterial* wheel_material = Physics->createMaterial(0.5, 0.5, 0.5);
@@ -128,9 +132,9 @@ static void addPhysXWheels(ASVehicle* vehicle)
 
 		//Joints
 
-		PxRevoluteJoint* j = PxRevoluteJointCreate(*Physics, vehicle_actor, wheel_relative, wheel_body, PxTransform(PxVec3(0, 0, 0)));
-		j->setConstraintFlag(PxConstraintFlag::eVISUALIZATION, true);
-		//j->setDriveVelocity(0);
+		PWheel->joint = PxRevoluteJointCreate(*Physics, vehicle_actor, wheel_relative, wheel_body, PxTransform(PxVec3(0, 0, 0)));
+		PWheel->joint->setConstraintFlag(PxConstraintFlag::eVISUALIZATION, true);
+		PWheel->joint->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_ENABLED, true);
 
 	}
 	

@@ -40,7 +40,7 @@ typedef struct _PhysX_World
 } PhysX_World;
 
 // Actor Physics Data
-typedef struct PhysData
+typedef struct _PhysData
 {
 	PhysicsTriData trimesh;
 
@@ -49,50 +49,13 @@ typedef struct PhysData
 	PxShape*	shape;
 	PxActor*	body;
 
-} _PhysData;
+} PhysData;
 
-/*
-typedef struct _ODE_World
+typedef struct _PhysX_Wheel
 {
-	dWorldID id = 0;
-	dSpaceID KA_Space; // Space for KarmaActor
-	dSpaceID SM_Space;
-	dSpaceID BSP_Space;
-	dSpaceID TER_Space; // Terrain space
-	_WORD* heightfield_data;
-	dHeightfieldDataID heightid;
-	dJointGroupID contact_group;
-	LevelPhysicsTriData BSP_Data; // Vertices and indices extracted from BSP
-	//LevelPhysicsTriData TER_Data;
-} ODE_World;
+	PxRevoluteJoint* joint;
 
-typedef struct _ODE_Wheel
-{
-	dBodyID	id = 0;
-	dGeomID	geom;
-	dJointID joint;
-} ODE_Wheel;
-
-typedef struct _ODE_PhysData
-{
-	dBodyID	id = 0;
-	dGeomID	geometry;
-	dMass	mass;
-
-	TArray<dReal>		triangles;
-	TArray<dTriIndex>	indices;
-	dTriMeshDataID		TriMeshID;
-
-	TArray<ODE_Wheel>	wheels;
-
-	_ODE_PhysData() {
-
-	}
-	~_ODE_PhysData() {
-		//TODO: Put something here
-	}
-} ODE_PhysData;
-*/
+} PhysX_Wheel;
 
 /// ********** Internal functions ********** ///
 
